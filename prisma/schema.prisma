@@ -1,0 +1,117 @@
+// Prisma ORM Schema para Supabase / PostgreSQL / SQLite
+// Diseñado para ToolTag Pro - Sistema de Préstamo de Herramientas RFID & Gamificación
+
+datasource db {
+  provider = "postgresql" // Puede cambiarse a "sqlite" para desarrollo local
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVO
+  BLOQUEADO
+}
+
+enum ToolStatus {
+  DISPONIBLE
+  PRESTADA
+  MANTENIMIENTO
+}
+
+enum LoanStatus {
+  ACTIVO
+  DEVUELTO_A_TIEMPO
+  DEVUELTO_TARDE
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  nombre            String
+  email             String             @unique
+  rol               Role               @default(USER)
+  tag_uid           String?            @unique
+  puntos            Int                @default(100)
+  estado            UserStatus         @default(ACTIVO)
+  avatar_url        String?
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  loans             Loan[]
+  pointTransactions PointTransaction[]
+
+  @@index([tag_uid])
+  @@map("users")
+}
+
+model Tool {
+  id                   Int         @id @default(autoincrement())
+  nombre               String
+  codigo_inventario    String      @unique @map("codigo_inventario")
+  tag_uid              String?     @unique @map("tag_uid")
+  categoria            String
+  estado               ToolStatus  @default(DISPONIBLE)
+  tiempo_prestamo_horas Int        @default(8) @map("tiempo_prestamo_horas")
+  ubicacion            String?     @default("Taller Central")
+  imagen_url           String?     @map("imagen_url")
+  descripcion          String?
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
+
+  loans                Loan[]
+
+  @@index([tag_uid])
+  @@index([estado])
+  @@map("tools")
+}
+
+model Loan {
+  id               Int         @id @default(autoincrement())
+  userId           Int         @map("user_id")
+  toolId           Int         @map("tool_id")
+  fecha_prestamo   DateTime    @default(now()) @map("fecha_prestamo")
+  fecha_limite     DateTime    @map("fecha_limite")
+  fecha_devolucion DateTime?   @map("fecha_devolucion")
+  estado           LoanStatus  @default(ACTIVO)
+  notas            String?
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tool             Tool        @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  pointTransactions PointTransaction[]
+
+  @@index([userId, estado])
+  @@index([toolId, estado])
+  @@map("loans")
+}
+
+model PointTransaction {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
+  loanId           Int?      @map("loan_id")
+  cantidad         Int       // Valor positivo para bonos, negativo para penalizaciones
+  motivo           String    // Justificación auditable
+  saldo_resultante Int?      @map("saldo_resultante")
+  fecha            DateTime  @default(now())
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loan             Loan?     @relation(fields: [loanId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("point_transactions")
+}
+
+model SystemSetting {
+  key         String  @id
+  value       String
+  descripcion String?
+
+  @@map("system_settings")
+}
