@@ -11,7 +11,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from .database import query_db, execute_db, get_connection
+from .database import query_db, execute_db, get_connection, DB_PATH
 from .gamification import (
     get_settings, update_setting, calculate_deadline,
     process_loan_checkout, process_loan_checkin, adjust_user_points,
@@ -19,6 +19,13 @@ from .gamification import (
     verify_pin, set_user_pin, update_user_profile, hash_pin
 )
 from .seed import seed_database
+
+# Inicializar base de datos si no existe (indispensable para despliegue en Render)
+if not DB_PATH.exists():
+    try:
+        seed_database(force=True)
+    except Exception as e:
+        print(f"Error inicializando DB: {e}")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
