@@ -1272,33 +1272,6 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                                 <IconPlus className="w-3.5 h-3.5" />
                                 <span>Crear Cuenta de Operario</span>
                             </button>
-
-                            {/* Accesos rápidos de prueba */}
-                            <div className="pt-2">
-                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold mb-1.5">
-                                    Acceso rápido demo (1-clic):
-                                </span>
-                                <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-                                    <button
-                                        onClick={() => onQuickLogin('carlos.mendoza@taller.io', '1234')}
-                                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-center font-medium truncate"
-                                    >
-                                        Carlos (140 pts)
-                                    </button>
-                                    <button
-                                        onClick={() => onQuickLogin('maria.gonzalez@taller.io', '1234')}
-                                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-center font-medium truncate"
-                                    >
-                                        María (105 pts)
-                                    </button>
-                                    <button
-                                        onClick={() => onQuickLogin('juan.perez@taller.io', '1234')}
-                                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-rose-300 text-center font-medium truncate"
-                                    >
-                                        Juan (15 pts)
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -1347,20 +1320,6 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                                 <IconLock className="w-3.5 h-3.5 text-amber-400" />
                                 <span>Registrar Nuevo Administrador (con Autorización)</span>
                             </button>
-
-                            {/* Acceso rápido Admin */}
-                            <div className="pt-2">
-                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold mb-1.5">
-                                    Acceso rápido demo Admin:
-                                </span>
-                                <button
-                                    onClick={() => onQuickLogin('admin@taller.io', '0000')}
-                                    className="w-full p-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[11px] text-cyan-300 text-center font-bold flex items-center justify-center gap-2"
-                                >
-                                    <span>Ing. Roberto Silva (Admin Maestro)</span>
-                                    <span className="font-mono text-slate-400">0000</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>

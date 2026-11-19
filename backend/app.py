@@ -18,15 +18,12 @@ from .gamification import (
     get_leaderboard, parse_iso_datetime, format_datetime,
     verify_pin, set_user_pin, update_user_profile, hash_pin
 )
-from .seed import seed_database
+from .seed import seed_database, clean_demo_and_ensure_admin_maestro
 
-# Inicializar base de datos (PostgreSQL en Supabase o SQLite local)
+# Inicializar base de datos (PostgreSQL en Supabase o SQLite local) y asegurar Admin Maestro
 try:
-    if os.environ.get("DATABASE_URL") or not DB_PATH.exists():
-        init_db()
-        users_count = query_db("SELECT count(*) as c FROM users", one=True)
-        if not users_count or users_count.get("c", 0) == 0:
-            seed_database(force=True)
+    init_db()
+    clean_demo_and_ensure_admin_maestro()
 except Exception as e:
     print(f"Error inicializando DB: {e}")
 
