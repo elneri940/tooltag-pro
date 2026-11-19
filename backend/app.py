@@ -166,7 +166,7 @@ async def api_get_user_by_tag(request):
 async def api_create_user(request):
     data = await request.json()
     nombre = data.get("nombre", "").strip()
-    email = data.get("email", "").strip()
+    email = data.get("email", "").strip().lower()
     rol = data.get("rol", "user")
     tag_uid = data.get("tag_uid", "").strip() or None
     puntos = int(data.get("puntos", 100))
@@ -176,6 +176,10 @@ async def api_create_user(request):
 
     if not nombre or not email:
         return JSONResponse({"error": "Nombre y correo son requeridos"}, status_code=400)
+
+    # Restricción institucional UAEM
+    if not email.endswith("@uaem.edu.mx"):
+        return JSONResponse({"error": "Registro restringido: Solo se permiten correos institucionales de la UAEM (@uaem.edu.mx)"}, status_code=400)
 
     try:
         user_id, _ = execute_db("""
@@ -198,10 +202,13 @@ async def api_update_user(request):
     user_id = request.path_params["id"]
     data = await request.json()
     nombre = data.get("nombre", "").strip()
-    email = data.get("email", "").strip()
+    email = data.get("email", "").strip().lower()
     rol = data.get("rol", "user")
     tag_uid = data.get("tag_uid", "").strip() or None
     estado = data.get("estado", "activo")
+
+    if email != "admin@taller.io" and not email.endswith("@uaem.edu.mx"):
+        return JSONResponse({"error": "El correo debe pertenecer al dominio institucional (@uaem.edu.mx)"}, status_code=400)
 
     try:
         execute_db("""
@@ -619,6 +626,12 @@ async def api_register(request):
 
     if not nombres or not apellido_paterno or not email or not password:
         return JSONResponse({"error": "Nombres, Apellido Paterno, Correo y Contraseña son obligatorios"}, status_code=400)
+
+    # Restricción obligatoria de dominio institucional
+    if not email.endswith("@uaem.edu.mx"):
+        return JSONResponse({
+            "error": "Acceso restringido: Solo se permite el registro con correo institucional oficial (@uaem.edu.mx)."
+        }, status_code=400)
 
     if len(password) < 4:
         return JSONResponse({"error": "La contraseña debe tener al menos 4 caracteres o dígitos"}, status_code=400)

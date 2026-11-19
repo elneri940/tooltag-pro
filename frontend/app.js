@@ -2524,6 +2524,13 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
         e.preventDefault();
         setIsLoading(true);
         setError("");
+
+        if (!email.trim().toLowerCase().endsWith("@uaem.edu.mx")) {
+            setError("Acceso restringido: Solo se permiten correos institucionales oficiales (@uaem.edu.mx)");
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -2603,15 +2610,23 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     </div>
 
                     <div>
-                        <label className="block text-slate-300 font-semibold mb-1">Correo Electrónico *</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-slate-300 font-semibold">Correo Institucional *</label>
+                            <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                @uaem.edu.mx
+                            </span>
+                        </div>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="carlos.mendoza@empresa.com"
+                            placeholder="tu.correo@uaem.edu.mx"
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                             required
                         />
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            Solo se aceptan cuentas oficiales de la <strong className="text-emerald-400">UAEM (@uaem.edu.mx)</strong>.
+                        </p>
                     </div>
 
                     <div>
@@ -2678,6 +2693,13 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
         e.preventDefault();
         setIsLoading(true);
         setError("");
+
+        if (!email.trim().toLowerCase().endsWith("@uaem.edu.mx")) {
+            setError("Acceso restringido: Solo se permiten correos institucionales oficiales (@uaem.edu.mx)");
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -2758,15 +2780,23 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     </div>
 
                     <div>
-                        <label className="block text-slate-300 font-semibold mb-1">Correo Electrónico *</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-slate-300 font-semibold">Correo Institucional *</label>
+                            <span className="text-[10px] text-blue-400 font-mono font-bold bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/30">
+                                @uaem.edu.mx
+                            </span>
+                        </div>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin.nuevo@taller.io"
+                            placeholder="admin.nuevo@uaem.edu.mx"
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                             required
                         />
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            Debe ser una cuenta institucional de la <strong className="text-blue-400">UAEM (@uaem.edu.mx)</strong>.
+                        </p>
                     </div>
 
                     <div>
@@ -3411,11 +3441,15 @@ function UserFormModal({ user, onClose, onSave }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-slate-400 mb-1">Correo Electrónico</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-slate-400">Correo Electrónico (UAEM)</label>
+                            <span className="text-[10px] text-emerald-400 font-mono">@uaem.edu.mx</span>
+                        </div>
                         <input
                             type="email"
                             value={formData.email}
                             onChange={e => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="usuario@uaem.edu.mx"
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                         />
                     </div>
