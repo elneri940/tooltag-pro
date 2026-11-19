@@ -141,16 +141,58 @@ const IconClipboard = ({ className = "w-5 h-5" }) => (
 // APLICACIÓN PRINCIPAL
 // ==========================================
 function App() {
-    // Usuario activo en sesión: null (pantalla de bienvenida/selección), user object (operario o admin)
-    const [currentUser, setCurrentUser] = useState(null);
+    // Usuario activo en sesión: persistente en localStorage para que no se cierre al refrescar
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            const saved = localStorage.getItem('tooltag_user');
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            return null;
+        }
+    });
 
     // Modales de Autenticación inicial
     // 'user_login' | 'admin_login' | 'user_register' | 'admin_register' | null
     const [authModal, setAuthModal] = useState(null);
 
-    // Pestañas según el rol
-    const [userTab, setUserTab] = useState('catalog'); // 'catalog', 'my_loans', 'profile', 'leaderboard'
-    const [adminTab, setAdminTab] = useState('requests'); // 'requests', 'loans', 'inventory', 'users', 'settings', 'kiosk'
+    // Pestañas según el rol (recordadas al refrescar la página)
+    const [userTab, setUserTab] = useState(() => {
+        try {
+            return localStorage.getItem('tooltag_user_tab') || 'catalog';
+        } catch (e) {
+            return 'catalog';
+        }
+    });
+    const [adminTab, setAdminTab] = useState(() => {
+        try {
+            return localStorage.getItem('tooltag_admin_tab') || 'requests';
+        } catch (e) {
+            return 'requests';
+        }
+    });
+
+    // Guardar estado de sesión en localStorage para persistir entre refrescos
+    useEffect(() => {
+        try {
+            if (currentUser) {
+                localStorage.setItem('tooltag_user', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('tooltag_user');
+            }
+        } catch (e) {}
+    }, [currentUser]);
+
+    useEffect(() => {
+        try {
+            if (userTab) localStorage.setItem('tooltag_user_tab', userTab);
+        } catch (e) {}
+    }, [userTab]);
+
+    useEffect(() => {
+        try {
+            if (adminTab) localStorage.setItem('tooltag_admin_tab', adminTab);
+        } catch (e) {}
+    }, [adminTab]);
 
     // Estado del Kiosco RFID
     const [kioskUser, setKioskUser] = useState(null);
@@ -605,6 +647,11 @@ function App() {
 
     // Cierre de Sesión
     const handleLogout = () => {
+        try {
+            localStorage.removeItem('tooltag_user');
+            localStorage.removeItem('tooltag_admin_tab');
+            localStorage.removeItem('tooltag_user_tab');
+        } catch (e) {}
         setCurrentUser(null);
         setKioskUser(null);
         showToast("Sesión cerrada", "info");
