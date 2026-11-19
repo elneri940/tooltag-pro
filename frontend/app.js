@@ -667,29 +667,31 @@ function App() {
             {currentUser && currentUser.rol === 'admin' && (
                 <div className="flex flex-col min-h-screen">
                     {/* Header Admin */}
-                    <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 py-3">
+                    <header className="border-b border-purple-950/80 bg-[#0a0414]/90 backdrop-blur sticky top-0 z-40 px-4 py-3">
                         <div className="max-w-7xl mx-auto flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                                    <IconShield className="w-6 h-6 text-white" />
-                                </div>
+                                <img 
+                                    src="/static/logo_yecapixtla.jpg" 
+                                    alt="EES Yecapixtla" 
+                                    className="w-11 h-11 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40 shadow-md shadow-purple-600/30"
+                                />
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h1 className="font-extrabold text-base sm:text-lg tracking-tight text-white">ToolTag Pro</h1>
-                                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                                            Panel Administrador
+                                        <h1 className="font-extrabold text-base sm:text-lg tracking-tight text-white">EES Yecapixtla</h1>
+                                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                            Admin &bull; UAEM
                                         </span>
                                     </div>
-                                    <p className="text-xs text-slate-400 hidden sm:block">Sesión: {currentUser.nombre} ({currentUser.email})</p>
+                                    <p className="text-xs text-purple-300/70 hidden sm:block">Sesión: {currentUser.nombre} ({currentUser.email})</p>
                                 </div>
                             </div>
 
                             {/* Navegación Admin */}
-                            <nav className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
+                            <nav className="flex items-center gap-1 bg-[#06020c]/80 p-1 rounded-xl border border-purple-950/80 overflow-x-auto max-w-full">
                                 <button
                                     onClick={() => setAdminTab('requests')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                        adminTab === 'requests' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                        adminTab === 'requests' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                                     }`}
                                 >
                                     <IconClipboard className="w-3.5 h-3.5" />
@@ -704,7 +706,7 @@ function App() {
                                 <button
                                     onClick={() => setAdminTab('loans')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                        adminTab === 'loans' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                        adminTab === 'loans' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                                     }`}
                                 >
                                     <IconClock className="w-3.5 h-3.5" />
@@ -714,7 +716,7 @@ function App() {
                                 <button
                                     onClick={() => setAdminTab('inventory')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                        adminTab === 'inventory' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                        adminTab === 'inventory' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                                     }`}
                                 >
                                     <IconWrench className="w-3.5 h-3.5" />
@@ -1171,22 +1173,29 @@ function App() {
 // ==========================================
 function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKioskDirectly, onToggleSimulator, simulatorOpen, onResetSeed }) {
     return (
-        <div className="min-h-screen flex flex-col justify-between p-4 sm:p-8 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-            {/* Luces de fondo decorativas */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 blur-[120px] pointer-events-none"></div>
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/10 blur-[120px] pointer-events-none"></div>
+        <div className="min-h-screen flex flex-col justify-between p-4 sm:p-8 bg-[#06020c] relative overflow-hidden">
+            {/* Luces y resplandores morados institucionales */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-purple-600/15 rounded-full blur-[140px] pointer-events-none -z-10"></div>
+            <div className="absolute bottom-0 right-10 w-[450px] h-[350px] bg-purple-900/15 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
-            {/* Barra superior de bienvenida */}
-            <div className="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-slate-800/80">
+            {/* Barra superior institucional */}
+            <div className="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-purple-950/70">
                 <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-                        <IconRadio className="w-6 h-6 text-white animate-pulse" />
-                    </div>
+                    <img 
+                        src="/static/logo_yecapixtla.jpg" 
+                        alt="Logo EES Yecapixtla UAEM" 
+                        className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-lg shadow-purple-600/25"
+                    />
                     <div>
-                        <h1 className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-cyan-400 bg-clip-text text-transparent">
-                            ToolTag Pro
-                        </h1>
-                        <p className="text-xs text-slate-400">Sistema Inteligente de Préstamo con RFID & Gamificación</p>
+                        <div className="flex items-center gap-2">
+                            <h1 className="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-white via-purple-100 to-purple-400 bg-clip-text text-transparent">
+                                EES Yecapixtla &bull; UAEM
+                            </h1>
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                RFID Tools
+                            </span>
+                        </div>
+                        <p className="text-xs text-purple-300/70">Escuela de Estudios Superiores de Yecapixtla</p>
                     </div>
                 </div>
 
@@ -1194,7 +1203,7 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                     <button
                         onClick={onToggleSimulator}
                         className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                            simulatorOpen ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            simulatorOpen ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/40' : 'bg-[#0d061a] border-purple-900/60 text-purple-300 hover:text-white hover:bg-purple-950/60'
                         }`}
                         title="Simulador de Lecturas RFID"
                     >
@@ -1203,7 +1212,7 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                     </button>
                     <button
                         onClick={onResetSeed}
-                        className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400"
+                        className="p-1.5 rounded-xl bg-[#0d061a] border border-purple-900/60 text-purple-400 hover:text-amber-400"
                         title="Reiniciar datos de prueba a estado original"
                     >
                         <IconRefreshCw className="w-4 h-4" />
@@ -1212,54 +1221,66 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
             </div>
 
             {/* Contenido Central: ¿Eres Administrador o Usuario? */}
-            <div className="max-w-4xl w-full mx-auto py-10 space-y-8 text-center">
+            <div className="max-w-4xl w-full mx-auto py-8 sm:py-12 space-y-8 text-center">
+                {/* Gran Escudo de Venado Yecapixtla */}
+                <div className="flex justify-center mb-2">
+                    <div className="relative group">
+                        <img 
+                            src="/static/logo_yecapixtla.jpg" 
+                            alt="Logo Escuela de Estudios Superiores de Yecapixtla" 
+                            className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-contain bg-white/5 p-2 border-2 border-purple-500/40 shadow-2xl shadow-purple-600/35 transition-transform group-hover:scale-105"
+                        />
+                        <div className="absolute -inset-2 rounded-3xl bg-purple-600/20 blur-xl -z-10 animate-pulse"></div>
+                    </div>
+                </div>
+
                 <div className="space-y-3">
-                    <span className="text-xs font-mono uppercase tracking-widest text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-3 py-1 rounded-full">
-                        Portal de Acceso al Sistema
+                    <span className="text-xs font-mono uppercase tracking-widest text-purple-300 bg-purple-950/80 border border-purple-500/40 px-3.5 py-1 rounded-full inline-block">
+                        Escuela de Estudios Superiores de Yecapixtla &bull; UAEM
                     </span>
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                        ¿Cómo deseas ingresar a ToolTag Pro?
+                        Sistema de Préstamo de Herramientas
                     </h2>
-                    <p className="text-sm text-slate-400 max-w-lg mx-auto">
-                        Selecciona tu rol para acceder a las herramientas permitidas o crear una nueva cuenta.
+                    <p className="text-sm text-purple-300/80 max-w-xl mx-auto leading-relaxed">
+                        Control con tags RFID/NFC y sistema de gamificación por puntualidad para talleres y laboratorios.
                     </p>
                 </div>
 
-                {/* Las Dos Grandes Tarjetas de Elección */}
+                {/* Las Dos Grandes Tarjetas de Elección (Morado con Negro) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                    {/* TARJETA 1: USUARIO / OPERARIO */}
-                    <div className="bg-slate-900/90 border-2 border-slate-800 hover:border-cyan-500/60 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 shadow-2xl transition-all hover:shadow-cyan-500/10 group">
+                    {/* TARJETA 1: USUARIO / ALUMNO */}
+                    <div className="bg-[#0e071c]/95 border-2 border-purple-950 hover:border-purple-500/70 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 shadow-2xl transition-all hover:shadow-purple-600/20 group">
                         <div className="space-y-4">
-                            <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
+                            <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform shadow-inner">
                                 <IconUser className="w-8 h-8" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-extrabold text-white">Soy Usuario / Operario</h3>
-                                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                    Consulta el catálogo de herramientas disponibles, envía solicitudes de préstamo, revisa tu saldo de puntos acumulados y monitorea la fecha límite de tus herramientas prestadas.
+                                <h3 className="text-2xl font-extrabold text-white">Soy Usuario / Alumno</h3>
+                                <p className="text-xs text-purple-300/80 mt-1 leading-relaxed">
+                                    Consulta existencias de equipo, manda solicitudes de préstamo para tus prácticas, revisa tus puntos de gamificación y cuándo debes regresar tus herramientas.
                                 </p>
                             </div>
 
                             <div className="space-y-1.5 text-xs text-slate-300 pt-2">
                                 <div className="flex items-center gap-2">
                                     <IconCheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                                    <span>Catálogo de existencias en tiempo real</span>
+                                    <span>Catálogo de herramientas disponibles</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <IconCheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                                    <span>Mandar solicitudes de préstamo al administrador</span>
+                                    <span>Mandar solicitud de préstamo para talleres</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <IconCheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                                    <span>Historial de puntos y recompensas de puntualidad</span>
+                                    <IconCheckCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                                    <span>Saldo de puntos acumulados por puntualidad</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-3 pt-4 border-t border-slate-800">
+                        <div className="space-y-3 pt-4 border-t border-purple-950/80">
                             <button
                                 onClick={() => onOpenLogin('user')}
-                                className="w-full py-3 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2"
                             >
                                 <IconLock className="w-4 h-4" />
                                 <span>Iniciar Sesión como Usuario</span>
@@ -1267,47 +1288,47 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
 
                             <button
                                 onClick={() => onOpenRegister('user')}
-                                className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+                                className="w-full py-2.5 px-4 rounded-xl bg-[#06020c] hover:bg-purple-950/70 text-purple-300 hover:text-white border border-purple-900/60 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
                             >
                                 <IconPlus className="w-3.5 h-3.5" />
-                                <span>Crear Cuenta de Operario</span>
+                                <span>Crear Cuenta (@uaem.edu.mx)</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* TARJETA 2: ADMINISTRADOR */}
-                    <div className="bg-slate-900/90 border-2 border-slate-800 hover:border-blue-500/60 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 shadow-2xl transition-all hover:shadow-blue-500/10 group">
+                    {/* TARJETA 2: ADMINISTRADOR / ENCARGADO DE TALLER */}
+                    <div className="bg-[#0e071c]/95 border-2 border-purple-950 hover:border-violet-500/70 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 shadow-2xl transition-all hover:shadow-violet-600/20 group">
                         <div className="space-y-4">
-                            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
+                            <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 group-hover:scale-105 transition-transform shadow-inner">
                                 <IconShield className="w-8 h-8" />
                             </div>
                             <div>
                                 <h3 className="text-2xl font-extrabold text-white">Soy Administrador</h3>
-                                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                    Gestiona el catálogo de herramientas (CRUD completo), acepta o rechaza solicitudes de préstamo, supervisa devoluciones y fechas de entrega, y administra usuarios y puntajes.
+                                <p className="text-xs text-purple-300/80 mt-1 leading-relaxed">
+                                    Supervisa el inventario total del laboratorio, aprueba o rechaza solicitudes de préstamo, controla los tags RFID físicos y revisa los préstamos activos.
                                 </p>
                             </div>
 
                             <div className="space-y-1.5 text-xs text-slate-300 pt-2">
                                 <div className="flex items-center gap-2">
-                                    <IconCheckCircle className="w-4 h-4 text-cyan-400 shrink-0" />
-                                    <span>Aceptar solicitudes de préstamo de operarios</span>
+                                    <IconCheckCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                                    <span>Aprobar o rechazar solicitudes de alumnos</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <IconCheckCircle className="w-4 h-4 text-cyan-400 shrink-0" />
-                                    <span>Ver qué usuarios tienen herramientas y cuándo regresan</span>
+                                    <IconCheckCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                                    <span>Control de entregas y fechas límite exactas</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <IconCheckCircle className="w-4 h-4 text-cyan-400 shrink-0" />
-                                    <span>Edición total del catálogo de herramientas y usuarios</span>
+                                    <IconCheckCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                                    <span>Edición de catálogo y vinculación de tags RFID</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-3 pt-4 border-t border-slate-800">
+                        <div className="space-y-3 pt-4 border-t border-purple-950/80">
                             <button
                                 onClick={() => onOpenLogin('admin')}
-                                className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-700 hover:from-violet-600 hover:to-indigo-600 text-white font-bold text-xs shadow-lg shadow-purple-700/30 transition-all flex items-center justify-center gap-2"
                             >
                                 <IconShield className="w-4 h-4" />
                                 <span>Iniciar Sesión como Administrador</span>
@@ -1315,10 +1336,10 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
 
                             <button
                                 onClick={() => onOpenRegister('admin')}
-                                className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+                                className="w-full py-2.5 px-4 rounded-xl bg-[#06020c] hover:bg-purple-950/70 text-purple-300 hover:text-white border border-purple-900/60 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
                             >
-                                <IconLock className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Registrar Nuevo Administrador (con Autorización)</span>
+                                <IconLock className="w-3.5 h-3.5 text-purple-400" />
+                                <span>Registrar Nuevo Admin (con Clave Maestra)</span>
                             </button>
                         </div>
                     </div>
@@ -1328,17 +1349,17 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                 <div className="pt-4">
                     <button
                         onClick={onOpenKioskDirectly}
-                        className="text-xs text-slate-400 hover:text-cyan-400 underline flex items-center justify-center gap-1.5 mx-auto font-medium"
+                        className="text-xs text-purple-300 hover:text-white underline flex items-center justify-center gap-1.5 mx-auto font-medium transition-colors"
                     >
-                        <IconRadio className="w-4 h-4 text-cyan-400" />
-                        <span>O abrir directamente la Estación Kiosco para escanear con Lector RFID físico</span>
+                        <IconRadio className="w-4 h-4 text-purple-400 animate-pulse" />
+                        <span>Abrir Modo Kiosco para escanear con Lector RFID físico en el mostrador</span>
                     </button>
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="max-w-6xl w-full mx-auto pt-6 border-t border-slate-800/80 text-center text-xs text-slate-500">
-                ToolTag Pro &copy; 2026 &bull; Control Industrial de Herramientas con Trazabilidad RFID y Gamificación
+            {/* Footer Institucional */}
+            <div className="max-w-6xl w-full mx-auto pt-6 border-t border-purple-950/60 text-center text-xs text-purple-400/60">
+                Escuela de Estudios Superiores de Yecapixtla &bull; Universidad Autónoma del Estado de Morelos (UAEM)
             </div>
         </div>
     );
@@ -1370,35 +1391,36 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
     return (
         <div className="flex flex-col min-h-screen">
             {/* Header del Operario */}
-            <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 py-3">
+            <header className="border-b border-purple-950/80 bg-[#0a0414]/90 backdrop-blur sticky top-0 z-40 px-4 py-3">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                            <IconUser className="w-6 h-6" />
-                        </div>
+                        <img 
+                            src="/static/logo_yecapixtla.jpg" 
+                            alt="EES Yecapixtla" 
+                            className="w-11 h-11 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40 shadow-md shadow-purple-600/30"
+                        />
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="font-extrabold text-base text-white">{currentUser.nombre}</h2>
                                 <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border ${
-                                    currentUser.puntos >= 130 ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
+                                    currentUser.puntos >= 130 ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' :
                                     currentUser.puntos >= 110 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
                                     currentUser.puntos >= 90 ? 'bg-slate-400/10 text-slate-300 border-slate-400/30' :
-                                    currentUser.puntos >= 50 ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
                                     'bg-rose-500/10 text-rose-400 border-rose-500/30'
                                 }`}>
                                     🏆 {currentUser.puntos} Pts
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-400 hidden sm:block">Cuenta de Operario &bull; {currentUser.email}</p>
+                            <p className="text-xs text-purple-300/70 hidden sm:block">{currentUser.email} &bull; EES Yecapixtla UAEM</p>
                         </div>
                     </div>
 
                     {/* Navegación Restringida del Usuario */}
-                    <nav className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+                    <nav className="flex items-center gap-1 bg-[#06020c]/80 p-1 rounded-xl border border-purple-950/80 overflow-x-auto">
                         <button
                             onClick={() => setUserTab('catalog')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                userTab === 'catalog' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                userTab === 'catalog' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                             }`}
                         >
                             <IconWrench className="w-3.5 h-3.5" />
@@ -3080,27 +3102,30 @@ function KioskView({
         return (
             <div className="flex flex-col items-center justify-center py-10 px-4 min-h-[60vh]">
                 <div className="max-w-xl w-full text-center space-y-8">
-                    <div className="relative mx-auto w-40 h-40 flex items-center justify-center">
-                        <div className="absolute inset-0 rounded-full border-2 border-cyan-500/30 rfid-ring"></div>
-                        <div className="absolute inset-4 rounded-full border-2 border-blue-500/40 animate-ping"></div>
-                        <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-cyan-600/30 to-blue-600/20 border-2 border-cyan-400/60 flex flex-col items-center justify-center shadow-2xl shadow-cyan-500/20 backdrop-blur">
-                            <IconRadio className="w-12 h-12 text-cyan-400 animate-pulse mb-1" />
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-cyan-300">RFID READY</span>
+                    <div className="relative mx-auto w-44 h-44 flex items-center justify-center">
+                        <div className="absolute inset-0 rounded-full border-2 border-purple-500/40 rfid-ring"></div>
+                        <div className="absolute inset-4 rounded-full border-2 border-indigo-500/40 animate-ping"></div>
+                        <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-purple-900/60 to-indigo-950/80 border-2 border-purple-400/70 flex flex-col items-center justify-center shadow-2xl shadow-purple-600/35 backdrop-blur p-2">
+                            <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla" className="w-16 h-16 rounded-full object-contain mb-1" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-purple-300">RFID READY</span>
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <h2 className="text-3xl font-extrabold tracking-tight text-white">
+                        <span className="text-xs font-mono uppercase tracking-widest text-purple-300 bg-purple-950/80 border border-purple-500/40 px-3 py-1 rounded-full">
+                            EES Yecapixtla &bull; UAEM
+                        </span>
+                        <h2 className="text-3xl font-extrabold tracking-tight text-white mt-2">
                             Estación Kiosco de Préstamo
                         </h2>
-                        <p className="text-slate-400 text-sm max-w-md mx-auto">
-                            Acerca tu credencial personal con chip <strong className="text-cyan-400">RFID / NFC</strong> al lector para identificarte.
+                        <p className="text-purple-300/80 text-sm max-w-md mx-auto">
+                            Acerca tu credencial o tag <strong className="text-purple-400 font-bold">RFID / NFC</strong> al lector para identificarte en el mostrador.
                         </p>
                     </div>
 
-                    <div className="pt-6 border-t border-slate-800">
-                        <p className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-3">
-                            o selecciona un operario para simular tag:
+                    <div className="pt-6 border-t border-purple-950/70">
+                        <p className="text-xs uppercase font-bold tracking-wider text-purple-400/80 mb-3">
+                            o selecciona un usuario para simular tag:
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             {users.filter(u => u.rol === 'user').map(u => (
@@ -3355,54 +3380,55 @@ function RFIDSimulatorDrawer({ isOpen, onClose, onScan, users, tools, customInpu
     if (!isOpen) return null;
 
     return (
-        <aside aria-label="Simulador de Hardware RFID / NFC" className="fixed bottom-4 left-4 z-40 max-w-sm w-full bg-slate-900/95 border border-cyan-500/40 rounded-2xl shadow-2xl p-4 backdrop-blur-md space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+        <aside aria-label="Simulador de Hardware RFID / NFC" className="fixed bottom-4 left-4 z-40 max-w-sm w-full bg-[#0d061c]/95 border border-purple-500/50 rounded-2xl shadow-2xl p-4 backdrop-blur-md space-y-3 shadow-purple-600/20">
+            <div className="flex items-center justify-between pb-2 border-b border-purple-950">
                 <div className="flex items-center gap-2">
-                    <IconRadio className="w-4 h-4 text-cyan-400 animate-pulse" />
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Simulador RFID / NFC</h4>
+                    <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla" className="w-5 h-5 rounded object-contain" />
+                    <IconRadio className="w-4 h-4 text-purple-400 animate-pulse" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Simulador RFID &bull; EES Yecapixtla</h4>
                 </div>
-                <button onClick={onClose} className="text-slate-400 hover:text-white">
+                <button onClick={onClose} className="text-purple-400 hover:text-white">
                     <IconXCircle className="w-4 h-4" />
                 </button>
             </div>
 
-            <p className="text-[11px] text-slate-400">Haz clic en una tarjeta para simular el acercamiento al lector USB:</p>
+            <p className="text-[11px] text-purple-300/80">Haz clic en una tarjeta para simular el acercamiento al lector USB:</p>
 
             <div className="space-y-1">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Credenciales de Usuarios:</div>
+                <div className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider">Credenciales de Usuarios:</div>
                 <div className="grid grid-cols-2 gap-1.5">
                     {users.map(u => (
                         <button
                             key={u.id}
                             onClick={() => onScan(u.tag_uid)}
                             className={`p-1.5 rounded-xl text-left border text-xs truncate ${
-                                activeKioskUser?.id === u.id ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold' : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                                activeKioskUser?.id === u.id ? 'bg-purple-600/30 border-purple-400 text-white font-bold' : 'bg-[#06020c] border-purple-900/60 text-purple-200 hover:bg-purple-950/60'
                             }`}
                         >
                             <div className="font-semibold truncate">{u.nombre}</div>
-                            <div className="font-mono text-[10px] text-cyan-400">{u.tag_uid}</div>
+                            <div className="font-mono text-[10px] text-purple-300">{u.tag_uid}</div>
                         </button>
                     ))}
                 </div>
             </div>
 
             <div className="space-y-1">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tags de Herramientas:</div>
+                <div className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider">Tags de Herramientas:</div>
                 <div className="grid grid-cols-1 gap-1">
                     {tools.slice(0, 4).map(t => (
                         <button
                             key={t.id}
                             onClick={() => onScan(t.tag_uid)}
-                            className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs flex justify-between text-slate-300"
+                            className="p-1.5 rounded-lg bg-[#06020c] hover:bg-purple-950/60 border border-purple-900/60 text-xs flex justify-between text-purple-200"
                         >
                             <span className="truncate">{t.nombre}</span>
-                            <span className="font-mono text-[10px] text-cyan-400 shrink-0 ml-2">{t.tag_uid}</span>
+                            <span className="font-mono text-[10px] text-purple-300 shrink-0 ml-2">{t.tag_uid}</span>
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800 flex gap-1.5">
+            <div className="pt-2 border-t border-purple-950 flex gap-1.5">
                 <input
                     type="text"
                     placeholder="UID manual"
