@@ -11,6 +11,7 @@ from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from sse_starlette.sse import EventSourceResponse
 
 from .database import query_db, execute_db, get_connection, DB_PATH, init_db
@@ -1061,14 +1062,20 @@ async def api_sse(request):
     )
 
 # --- SERVIR FRONTEND ---
+class CachedStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            # Cachear recursos estaticos en el navegador por 7 dias para carga instantanea en moviles
+            response.headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
+        return response
+
 async def serve_index(request):
     index_file = FRONTEND_DIR / "index.html"
     return FileResponse(
         index_file,
         headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
+            "Cache-Control": "public, max-age=120, stale-while-revalidate=600",
         }
     )
 
@@ -1112,10 +1119,11 @@ routes = [
     Route("/api/seed/reset", api_reset_seed, methods=["POST"]),
     Route("/api/rfid/scan", api_rfid_scan, methods=["POST"]),
     Route("/api/events", api_sse, methods=["GET"]),
-    Mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static"),
+    Mount("/static", CachedStaticFiles(directory=str(FRONTEND_DIR)), name="static"),
 ]
 
 middleware = [
+    Middleware(GZipMiddleware, minimum_size=500),
     Middleware(
         CORSMiddleware,
         allow_origins=["*"],
