@@ -26,8 +26,11 @@ def adapt_query_for_pg(query):
     if "INSERT OR REPLACE INTO system_settings" in q:
         q = ("INSERT INTO system_settings (key, value, descripcion) VALUES (%s, %s, %s) "
              "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, descripcion = EXCLUDED.descripcion")
-    # Reemplazar placeholders ? por %s
-    q = q.replace("?", "%s")
+    # Reemplazar placeholders ? por %s unicamente fuera de cadenas de texto literales
+    parts = q.split("'")
+    for i in range(0, len(parts), 2):
+        parts[i] = parts[i].replace("?", "%s")
+    q = "'".join(parts)
     return q
 
 class PGConnectionWrapper:
@@ -51,6 +54,17 @@ class PGConnectionWrapper:
 
     def close(self):
         self._raw_conn.close()
+
+from decimal import Decimal
+
+def _clean_pg_row(row):
+    if not row:
+        return None
+    d = dict(row)
+    for k, v in d.items():
+        if isinstance(v, Decimal):
+            d[k] = float(v) if '.' in str(v) else int(v)
+    return d
 
 class PGCursorWrapper:
     """Wrapper para capturar lastrowid automáticamente con RETURNING id."""
@@ -85,11 +99,11 @@ class PGCursorWrapper:
 
     def fetchone(self):
         res = self._cur.fetchone()
-        return dict(res) if res else None
+        return _clean_pg_row(res)
 
     def fetchall(self):
         rows = self._cur.fetchall()
-        return [dict(r) for r in rows] if rows else []
+        return [_clean_pg_row(r) for r in rows] if rows else []
 
     def close(self):
         self._cur.close()

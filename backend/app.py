@@ -86,7 +86,7 @@ async def api_stats(request):
         },
         "users": {
             "total": total_users,
-            "promedio_puntos": round(avg_points, 1)
+            "promedio_puntos": round(float(avg_points or 100), 1)
         },
         "requests": {
             "pendientes": pending_requests

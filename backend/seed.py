@@ -36,14 +36,14 @@ def clean_demo_and_ensure_admin_maestro():
                     tag_uid = 'AD-0001',
                     puntos = 500,
                     estado = 'activo',
-                    avatar_url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+                    avatar_url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
                     pin_hash = ?
                 WHERE id = ?;
             """, (hash_pin(ADMIN_MAESTRO_PASSWORD), admin_id))
         else:
             cur.execute("""
                 INSERT INTO users (nombre, nombres, apellido_paterno, apellido_materno, email, rol, tag_uid, puntos, estado, avatar_url, pin_hash, created_at)
-                VALUES ('Admin Maestro', 'Admin', 'Maestro', '', 'admin@taller.io', 'admin', 'AD-0001', 500, 'activo', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', ?, ?)
+                VALUES ('Admin Maestro', 'Admin', 'Maestro', '', 'admin@taller.io', 'admin', 'AD-0001', 500, 'activo', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb', ?, ?)
             """, (hash_pin(ADMIN_MAESTRO_PASSWORD), format_datetime(now)))
 
             cur.execute("SELECT id FROM users WHERE email = 'admin@taller.io';")
@@ -103,14 +103,14 @@ def seed_database(force=True):
                     tag_uid = 'AD-0001',
                     puntos = 500,
                     estado = 'activo',
-                    avatar_url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+                    avatar_url = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
                     pin_hash = ?
                 WHERE id = ?;
             """, (hash_pin(ADMIN_MAESTRO_PASSWORD), admin_id))
         else:
             cur.execute("""
                 INSERT INTO users (nombre, nombres, apellido_paterno, apellido_materno, email, rol, tag_uid, puntos, estado, avatar_url, pin_hash, created_at)
-                VALUES ('Admin Maestro', 'Admin', 'Maestro', '', 'admin@taller.io', 'admin', 'AD-0001', 500, 'activo', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', ?, ?)
+                VALUES ('Admin Maestro', 'Admin', 'Maestro', '', 'admin@taller.io', 'admin', 'AD-0001', 500, 'activo', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb', ?, ?)
             """, (hash_pin(ADMIN_MAESTRO_PASSWORD), format_datetime(now)))
             admin_id = getattr(cur, "lastrowid", None) or 1
 
