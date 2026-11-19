@@ -11,12 +11,12 @@ def clean_demo_and_ensure_admin_maestro():
     try:
         cur = conn.cursor()
         # 1. Eliminar cualquier usuario que no sea institucional de la UAEM ni el Admin Maestro
-        cur.execute("DELETE FROM loan_requests WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io');")
-        cur.execute("DELETE FROM point_transactions WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io');")
-        cur.execute("DELETE FROM loans WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io');")
-        cur.execute("DELETE FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io';")
+        cur.execute("DELETE FROM loan_requests WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE ? AND email != 'admin@taller.io');", ('%@uaem.edu.mx',))
+        cur.execute("DELETE FROM point_transactions WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE ? AND email != 'admin@taller.io');", ('%@uaem.edu.mx',))
+        cur.execute("DELETE FROM loans WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE ? AND email != 'admin@taller.io');", ('%@uaem.edu.mx',))
+        cur.execute("DELETE FROM users WHERE email NOT LIKE ? AND email != 'admin@taller.io';", ('%@uaem.edu.mx',))
 
-        # 2. Resetear herramientas a disponibles si estaban prestadas a perfiles demo
+        # 2. Resetear herramientas a disponibles si no están en préstamos activos
         cur.execute("UPDATE tools SET estado = 'disponible' WHERE id NOT IN (SELECT tool_id FROM loans WHERE estado = 'activo');")
 
         # 3. Crear o actualizar al Admin Maestro con su clave segura
@@ -45,7 +45,10 @@ def clean_demo_and_ensure_admin_maestro():
                 INSERT INTO users (nombre, nombres, apellido_paterno, apellido_materno, email, rol, tag_uid, puntos, estado, avatar_url, pin_hash, created_at)
                 VALUES ('Admin Maestro', 'Admin', 'Maestro', '', 'admin@taller.io', 'admin', 'AD-0001', 500, 'activo', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', ?, ?)
             """, (hash_pin(ADMIN_MAESTRO_PASSWORD), format_datetime(now)))
-            admin_id = getattr(cur, "lastrowid", None) or 1
+
+            cur.execute("SELECT id FROM users WHERE email = 'admin@taller.io';")
+            created_admin = cur.fetchone()
+            admin_id = created_admin["id"] if isinstance(created_admin, dict) else created_admin[0]
 
             cur.execute("""
                 INSERT INTO point_transactions (user_id, loan_id, cantidad, motivo, saldo_resultante, fecha)

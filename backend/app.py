@@ -47,6 +47,10 @@ async def broadcast_event(event_type: str, data: dict):
 # ==========================================
 
 async def api_health(request):
+    try:
+        clean_demo_and_ensure_admin_maestro()
+    except Exception as e:
+        return JSONResponse({"status": "ok", "app": "RFID Tool Manager", "version": "1.0.0", "seed_note": str(e)})
     return JSONResponse({"status": "ok", "app": "RFID Tool Manager", "version": "1.0.0"})
 
 async def api_stats(request):
