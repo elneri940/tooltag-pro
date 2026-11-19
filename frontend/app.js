@@ -292,14 +292,44 @@ function App() {
     useEffect(() => {
         refreshAllData();
 
-        const evtSource = new EventSource('/api/events');
-        evtSource.onmessage = (event) => {
-            try {
-                refreshAllData();
-            } catch (e) {}
-        };
+        // 1. Polling periódico continuo cada 3 segundos (actualización automática sin recargar)
+        const pollInterval = setInterval(() => {
+            refreshAllData();
+        }, 3000);
 
-        return () => evtSource.close();
+        // 2. Conexión SSE para recepción inmediata de eventos en tiempo real
+        let evtSource = null;
+        try {
+            evtSource = new EventSource('/api/events');
+            evtSource.onmessage = () => {
+                try { refreshAllData(); } catch (e) {}
+            };
+            evtSource.addEventListener('message', () => {
+                try { refreshAllData(); } catch (e) {}
+            });
+            evtSource.addEventListener('user_created', () => {
+                try { refreshAllData(); } catch (e) {}
+            });
+            evtSource.addEventListener('user_deleted', () => {
+                try { refreshAllData(); } catch (e) {}
+            });
+            evtSource.addEventListener('loan_updated', () => {
+                try { refreshAllData(); } catch (e) {}
+            });
+            evtSource.addEventListener('tool_updated', () => {
+                try { refreshAllData(); } catch (e) {}
+            });
+            evtSource.onerror = () => {
+                // Si la conexión SSE se reconecta o corta, el polling continuo de 3s mantiene todo fresco
+            };
+        } catch (e) {}
+
+        return () => {
+            clearInterval(pollInterval);
+            if (evtSource) {
+                try { evtSource.close(); } catch (e) {}
+            }
+        };
     }, [currentUser?.id]);
 
     // Temporizador Kiosco

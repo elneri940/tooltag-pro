@@ -1033,23 +1033,32 @@ async def api_rfid_scan(request):
 
 # --- SSE (Server-Sent Events) ---
 async def api_sse(request):
-    """Canal de suscripción en tiempo real."""
+    """Canal de suscripción en tiempo real con heartbeat."""
     queue = asyncio.Queue()
     sse_subscribers.add(queue)
 
     async def event_generator():
         try:
-            # Mensaje inicial de bienvenida
             yield {"event": "connected", "data": json.dumps({"connected": True})}
             while True:
-                msg = await queue.get()
-                yield {"event": "message", "data": msg}
+                try:
+                    msg = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    yield {"event": "message", "data": msg}
+                except asyncio.TimeoutError:
+                    yield {"event": "ping", "data": "keepalive"}
         except asyncio.CancelledError:
-            sse_subscribers.discard(queue)
+            pass
         finally:
             sse_subscribers.discard(queue)
 
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(
+        event_generator(),
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive"
+        }
+    )
 
 # --- SERVIR FRONTEND ---
 async def serve_index(request):
