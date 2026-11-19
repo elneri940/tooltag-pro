@@ -11,7 +11,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from .database import query_db, execute_db, get_connection, DB_PATH
+from .database import query_db, execute_db, get_connection, DB_PATH, init_db
 from .gamification import (
     get_settings, update_setting, calculate_deadline,
     process_loan_checkout, process_loan_checkin, adjust_user_points,
@@ -20,12 +20,15 @@ from .gamification import (
 )
 from .seed import seed_database
 
-# Inicializar base de datos si no existe (indispensable para despliegue en Render)
-if not DB_PATH.exists():
-    try:
-        seed_database(force=True)
-    except Exception as e:
-        print(f"Error inicializando DB: {e}")
+# Inicializar base de datos (PostgreSQL en Supabase o SQLite local)
+try:
+    if os.environ.get("DATABASE_URL") or not DB_PATH.exists():
+        init_db()
+        users_count = query_db("SELECT count(*) as c FROM users", one=True)
+        if not users_count or users_count.get("c", 0) == 0:
+            seed_database(force=True)
+except Exception as e:
+    print(f"Error inicializando DB: {e}")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
