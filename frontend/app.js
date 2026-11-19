@@ -748,9 +748,9 @@ function App() {
                         <div className="max-w-7xl mx-auto flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <img 
-                                    src="/static/logo_yecapixtla.jpg" 
+                                    src="/static/logo_yecapixtla.png?v=20261119_v14" 
                                     alt="EES Yecapixtla" 
-                                    className="w-11 h-11 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40 shadow-md shadow-purple-600/30"
+                                    className="w-11 h-11 rounded-xl object-contain bg-white p-1 border border-purple-500/40 shadow-md shadow-purple-600/30"
                                 />
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -1040,7 +1040,7 @@ function App() {
                 <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 shadow-purple-600/20">
                         <div className="flex justify-center mb-1">
-                            <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-14 h-14 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30" />
+                            <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla UAEM" className="w-14 h-14 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white">Verificación de Seguridad</h3>
@@ -1122,7 +1122,7 @@ function App() {
                 <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                         <div className="flex items-center gap-3 mb-4">
-                            <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30" />
+                            <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla UAEM" className="w-12 h-12 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30" />
                             <div>
                                 <h3 className="font-bold text-lg text-white">Ajuste Manual de Puntos</h3>
                                 <p className="text-xs text-slate-400">Usuario: {targetUserForPoints.nombre} (Saldo: {targetUserForPoints.puntos} pts)</p>
@@ -1257,9 +1257,9 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
             <div className="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-purple-950/70">
                 <div className="flex items-center gap-3">
                     <img 
-                        src="/static/logo_yecapixtla.jpg" 
+                        src="/static/logo_yecapixtla.png?v=20261119_v14" 
                         alt="Logo EES Yecapixtla UAEM" 
-                        className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-lg shadow-purple-600/25"
+                        className="w-12 h-12 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-lg shadow-purple-600/25"
                     />
                     <div>
                         <div className="flex items-center gap-2">
@@ -1295,9 +1295,9 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                 <div className="flex justify-center mb-2">
                     <div className="relative group">
                         <img 
-                            src="/static/logo_yecapixtla.jpg" 
+                            src="/static/logo_yecapixtla.png?v=20261119_v14" 
                             alt="Logo Escuela de Estudios Superiores de Yecapixtla" 
-                            className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-contain bg-white/5 p-2 border-2 border-purple-500/40 shadow-2xl shadow-purple-600/35 transition-transform group-hover:scale-105"
+                            className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-contain bg-white p-2 border-2 border-purple-500/40 shadow-2xl shadow-purple-600/35 transition-transform group-hover:scale-105"
                         />
                         <div className="absolute -inset-2 rounded-3xl bg-purple-600/20 blur-xl -z-10 animate-pulse"></div>
                     </div>
@@ -1464,9 +1464,9 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <img 
-                            src="/static/logo_yecapixtla.jpg" 
+                            src="/static/logo_yecapixtla.png?v=20261119_v14" 
                             alt="EES Yecapixtla" 
-                            className="w-11 h-11 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40 shadow-md shadow-purple-600/30"
+                            className="w-11 h-11 rounded-xl object-contain bg-white p-1 border border-purple-500/40 shadow-md shadow-purple-600/30"
                         />
                         <div>
                             <div className="flex items-center gap-2">
@@ -2402,9 +2402,9 @@ function ToolRequestModal({ tool, currentUser, onClose, onSubmit }) {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <img 
-                            src="/static/logo_yecapixtla.jpg" 
+                            src="/static/logo_yecapixtla.png?v=20261119_v14" 
                             alt="EES Yecapixtla UAEM" 
-                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                            className="w-12 h-12 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
                         />
                         <div>
                             <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/40">
@@ -2525,9 +2525,9 @@ function LoginAuthModal({ targetRole, onClose, onSuccess, onSwitchToRegister }) 
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <img 
-                            src="/static/logo_yecapixtla.jpg" 
+                            src="/static/logo_yecapixtla.png?v=20261119_v14" 
                             alt="EES Yecapixtla UAEM" 
-                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                            className="w-12 h-12 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
                         />
                         <div>
                             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
@@ -2706,9 +2706,9 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <img 
-                            src="/static/logo_yecapixtla.jpg" 
+                            src="/static/logo_yecapixtla.png?v=20261119_v14" 
                             alt="EES Yecapixtla UAEM" 
-                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                            className="w-12 h-12 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
                         />
                         <div>
                             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
@@ -2976,9 +2976,9 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <img 
-                            src="/static/logo_yecapixtla.jpg" 
+                            src="/static/logo_yecapixtla.png?v=20261119_v14" 
                             alt="EES Yecapixtla UAEM" 
-                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                            className="w-12 h-12 rounded-2xl object-contain bg-white p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
                         />
                         <div>
                             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
@@ -3198,7 +3198,7 @@ function KioskView({
                         <div className="absolute inset-0 rounded-full border-2 border-purple-500/40 rfid-ring"></div>
                         <div className="absolute inset-4 rounded-full border-2 border-indigo-500/40 animate-ping"></div>
                         <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-purple-900/60 to-indigo-950/80 border-2 border-purple-400/70 flex flex-col items-center justify-center shadow-2xl shadow-purple-600/35 backdrop-blur p-2">
-                            <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla" className="w-16 h-16 rounded-full object-contain mb-1" />
+                            <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla" className="w-16 h-16 rounded-full object-contain bg-white p-1 mb-1" />
                             <span className="text-[10px] uppercase font-bold tracking-widest text-purple-300">RFID READY</span>
                         </div>
                     </div>
@@ -3475,7 +3475,7 @@ function RFIDSimulatorDrawer({ isOpen, onClose, onScan, users, tools, customInpu
         <aside aria-label="Simulador de Hardware RFID / NFC" className="fixed bottom-4 left-4 z-40 max-w-sm w-full bg-[#0d061c]/95 border border-purple-500/50 rounded-2xl shadow-2xl p-4 backdrop-blur-md space-y-3 shadow-purple-600/20">
             <div className="flex items-center justify-between pb-2 border-b border-purple-950">
                 <div className="flex items-center gap-2">
-                    <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla" className="w-5 h-5 rounded object-contain" />
+                    <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla" className="w-5 h-5 rounded object-contain bg-white p-0.5" />
                     <IconRadio className="w-4 h-4 text-purple-400 animate-pulse" />
                     <h4 className="text-xs font-bold text-white uppercase tracking-wider">Simulador RFID &bull; EES Yecapixtla</h4>
                 </div>
@@ -3615,7 +3615,7 @@ function ToolFormModal({ tool, onClose, onSave }) {
             <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 shadow-purple-600/20">
                 <div className="flex items-center justify-between pb-2 border-b border-purple-950">
                     <div className="flex items-center gap-3">
-                        <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40" />
+                        <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white p-1 border border-purple-500/40" />
                         <div>
                             <h3 className="font-bold text-base text-white">{tool ? "Editar Herramienta" : "Nueva Herramienta"}</h3>
                             <p className="text-[10px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
@@ -3739,7 +3739,7 @@ function UserFormModal({ user, onClose, onSave }) {
             <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                 <div className="flex items-center justify-between pb-2 border-b border-purple-950">
                     <div className="flex items-center gap-3">
-                        <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40" />
+                        <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white p-1 border border-purple-500/40" />
                         <div>
                             <h3 className="font-bold text-base text-white">{user ? "Editar Operario / Usuario" : "Nuevo Operario"}</h3>
                             <p className="text-[10px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
@@ -3872,7 +3872,7 @@ function AdminProfileModal({ users, onClose, onSave, showToast }) {
             <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                 <div className="flex justify-between items-center pb-2 border-b border-purple-950">
                     <div className="flex items-center gap-3">
-                        <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40" />
+                        <img src="/static/logo_yecapixtla.png?v=20261119_v14" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white p-1 border border-purple-500/40" />
                         <div>
                             <h3 className="font-bold text-base text-white">Perfil de Administrador</h3>
                             <p className="text-[10px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
