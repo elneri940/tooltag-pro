@@ -12,8 +12,24 @@ if IS_POSTGRES:
     try:
         import psycopg2
         import psycopg2.extras
+        import psycopg2.pool
     except ImportError:
         IS_POSTGRES = False
+
+_pg_pool = None
+
+def get_pg_pool():
+    global _pg_pool
+    if _pg_pool is None and IS_POSTGRES:
+        url = DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        try:
+            _pg_pool = psycopg2.pool.ThreadedConnectionPool(minconn=1, maxconn=10, dsn=url)
+        except Exception as e:
+            print(f"[DB] Error inicializando ThreadedConnectionPool: {e}")
+            _pg_pool = None
+    return _pg_pool
 
 def adapt_query_for_pg(query):
     """Adapta sintaxis SQLite a PostgreSQL."""
@@ -34,9 +50,10 @@ def adapt_query_for_pg(query):
     return q
 
 class PGConnectionWrapper:
-    """Wrapper para emular comportamiento de SQLite con psycopg2."""
-    def __init__(self, raw_conn):
+    """Wrapper para emular comportamiento de SQLite con psycopg2 reutilizando conexiones del pool."""
+    def __init__(self, raw_conn, pool=None):
         self._raw_conn = raw_conn
+        self._pool = pool
 
     def cursor(self):
         return PGCursorWrapper(self._raw_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor))
@@ -53,7 +70,20 @@ class PGConnectionWrapper:
         self._raw_conn.rollback()
 
     def close(self):
-        self._raw_conn.close()
+        if self._pool:
+            try:
+                if self._raw_conn.closed:
+                    self._pool.putconn(self._raw_conn, close=True)
+                else:
+                    self._raw_conn.rollback()
+                    self._pool.putconn(self._raw_conn)
+            except Exception:
+                pass
+        else:
+            try:
+                self._raw_conn.close()
+            except Exception:
+                pass
 
 from decimal import Decimal
 from datetime import datetime as dt_type, date as d_type
@@ -112,8 +142,18 @@ class PGCursorWrapper:
         self._cur.close()
 
 def get_connection():
-    """Retorna una conexión activa a PostgreSQL (en Render/Supabase) o a SQLite (local)."""
+    """Retorna una conexión activa a PostgreSQL (en Render/Supabase) con pool o a SQLite (local)."""
     if IS_POSTGRES:
+        pool = get_pg_pool()
+        if pool:
+            try:
+                raw_conn = pool.getconn()
+                if raw_conn.closed:
+                    pool.putconn(raw_conn, close=True)
+                    raw_conn = pool.getconn()
+                return PGConnectionWrapper(raw_conn, pool=pool)
+            except Exception as e:
+                print(f"[DB] Fallback de getconn a conexión directa: {e}")
         url = DATABASE_URL
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)

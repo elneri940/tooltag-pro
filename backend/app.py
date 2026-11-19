@@ -12,6 +12,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from starlette.concurrency import run_in_threadpool
 from sse_starlette.sse import EventSourceResponse
 
 from .database import query_db, execute_db, get_connection, DB_PATH, init_db
@@ -55,6 +56,137 @@ async def api_health(request):
     except Exception as e:
         return JSONResponse({"status": "ok", "app": "RFID Tool Manager", "version": "1.0.0", "seed_note": str(e)})
     return JSONResponse({"status": "ok", "app": "RFID Tool Manager", "version": "1.0.0"})
+
+def get_all_sync_data():
+    """Recopila todo el estado del sistema en un único paso de alta velocidad."""
+    # 1. Usuarios con conteo de préstamos
+    users = query_db("""
+        SELECT u.*,
+               COUNT(CASE WHEN l.estado = 'activo' THEN 1 END) as prestamos_activos,
+               COUNT(CASE WHEN l.estado = 'activo' AND l.fecha_limite < datetime('now', 'localtime') THEN 1 END) as prestamos_vencidos
+        FROM users u
+        LEFT JOIN loans l ON u.id = l.user_id
+        GROUP BY u.id
+        ORDER BY u.puntos DESC, u.nombre ASC
+    """)
+    for u in users:
+        u.pop("pin_hash", None)
+
+    # 2. Herramientas con préstamo actual si existe
+    tools = query_db("""
+        SELECT t.*,
+               l.id as current_loan_id,
+               l.user_id as current_borrower_id,
+               u.nombre as current_borrower_name,
+               l.fecha_prestamo as current_loan_start,
+               l.fecha_limite as current_loan_due
+        FROM tools t
+        LEFT JOIN loans l ON t.id = l.tool_id AND l.estado = 'activo'
+        LEFT JOIN users u ON l.user_id = u.id
+        ORDER BY t.nombre ASC
+    """)
+
+    # 3. Préstamos
+    loans = query_db("""
+        SELECT l.*,
+               u.nombre as user_nombre,
+               u.email as user_email,
+               t.nombre as tool_nombre,
+               t.codigo_inventario as tool_codigo
+        FROM loans l
+        JOIN users u ON l.user_id = u.id
+        JOIN tools t ON l.tool_id = t.id
+        ORDER BY l.fecha_prestamo DESC
+    """)
+
+    # 4. Solicitudes
+    requests = query_db("""
+        SELECT lr.*,
+               u.nombre as user_nombre,
+               u.email as user_email,
+               u.puntos as user_puntos,
+               t.nombre as tool_nombre,
+               t.codigo_inventario as tool_codigo,
+               t.imagen_url as tool_imagen
+        FROM loan_requests lr
+        JOIN users u ON lr.user_id = u.id
+        JOIN tools t ON lr.tool_id = t.id
+        ORDER BY lr.fecha_solicitud DESC
+    """)
+
+    # 5. Leaderboard
+    leaderboard = query_db("""
+        SELECT id, nombre, email, puntos, rol, avatar_url,
+               (SELECT COUNT(*) FROM loans WHERE user_id = users.id AND estado = 'devuelto_a_tiempo') as entregas_a_tiempo,
+               (SELECT COUNT(*) FROM loans WHERE user_id = users.id AND estado = 'devuelto_tarde') as entregas_tarde
+        FROM users
+        WHERE rol = 'user' AND estado = 'activo'
+        ORDER BY puntos DESC
+        LIMIT 10
+    """)
+
+    # 6. Transacciones
+    transactions = query_db("""
+        SELECT pt.*, u.nombre as user_nombre, t.nombre as tool_nombre
+        FROM point_transactions pt
+        JOIN users u ON pt.user_id = u.id
+        LEFT JOIN loans l ON pt.loan_id = l.id
+        LEFT JOIN tools t ON l.tool_id = t.id
+        ORDER BY pt.fecha DESC
+        LIMIT 50
+    """)
+
+    # 7. Configuración
+    settings = get_settings()
+
+    # 8. Estadísticas calculadas instantáneamente en memoria
+    ahora_str = format_datetime(datetime.now())
+    total_tools = len(tools)
+    available_tools = sum(1 for t in tools if t.get('estado') == 'disponible')
+    loaned_tools = sum(1 for t in tools if t.get('estado') == 'prestada')
+    maint_tools = sum(1 for t in tools if t.get('estado') == 'mantenimiento')
+    active_loans = sum(1 for l in loans if l.get('estado') == 'activo')
+    overdue_loans = sum(1 for l in loans if l.get('estado') == 'activo' and str(l.get('fecha_limite')) < ahora_str)
+    user_list = [u for u in users if u.get('rol') == 'user']
+    total_users = len(user_list)
+    avg_points = (sum(u.get('puntos', 100) for u in user_list) / total_users) if total_users > 0 else 100
+    pending_requests = sum(1 for r in requests if r.get('estado') == 'pendiente')
+
+    stats = {
+        "tools": {
+            "total": total_tools,
+            "disponibles": available_tools,
+            "prestadas": loaned_tools,
+            "mantenimiento": maint_tools
+        },
+        "loans": {
+            "activos": active_loans,
+            "vencidos": overdue_loans
+        },
+        "users": {
+            "total": total_users,
+            "promedio_puntos": round(float(avg_points), 1)
+        },
+        "requests": {
+            "pendientes": pending_requests
+        }
+    }
+
+    return {
+        "stats": stats,
+        "users": users,
+        "tools": tools,
+        "loans": loans,
+        "leaderboard": leaderboard,
+        "settings": settings,
+        "transactions": transactions,
+        "requests": requests
+    }
+
+async def api_sync(request):
+    """Sincronización unificada de alta velocidad en 1 solo viaje de red."""
+    data = await run_in_threadpool(get_all_sync_data)
+    return JSONResponse(data)
 
 async def api_stats(request):
     """Estadísticas globales de supervisión para el Dashboard."""
@@ -1088,6 +1220,7 @@ async def serve_index(request):
 routes = [
     Route("/", serve_index),
     Route("/api/health", api_health, methods=["GET"]),
+    Route("/api/sync", api_sync, methods=["GET"]),
     Route("/api/stats", api_stats, methods=["GET"]),
     Route("/api/users", api_get_users, methods=["GET"]),
     Route("/api/users", api_create_user, methods=["POST"]),

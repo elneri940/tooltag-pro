@@ -249,85 +249,114 @@ function App() {
     // ==========================================
     // CARGA DE DATOS & SSE
     // ==========================================
+    const isRefreshingRef = useRef(false);
+
     const refreshAllData = async () => {
+        if (isRefreshingRef.current) return;
+        isRefreshingRef.current = true;
         try {
-            const [statsRes, usersRes, toolsRes, loansRes, leadRes, setRes, txRes, reqsRes] = await Promise.all([
-                fetch('/api/stats').then(r => r.json()),
-                fetch('/api/users').then(r => r.json()),
-                fetch('/api/tools').then(r => r.json()),
-                fetch('/api/loans').then(r => r.json()),
-                fetch('/api/leaderboard').then(r => r.json()),
-                fetch('/api/settings').then(r => r.json()),
-                fetch('/api/transactions').then(r => r.json()),
-                fetch('/api/requests').then(r => r.json())
-            ]);
-            setStats(statsRes);
-            setUsers(usersRes);
-            setTools(toolsRes);
-            setLoans(loansRes);
-            setLeaderboard(leadRes);
-            setSettings(setRes);
-            setTransactions(txRes);
-            setLoanRequests(reqsRes);
-
-            // Refrescar usuario activo en sesión si existe
-            if (currentUser) {
-                const refreshed = usersRes.find(u => u.id === currentUser.id);
-                if (refreshed) {
-                    setCurrentUser(prev => ({ ...prev, ...refreshed }));
+            // Intento prioritario por /api/sync unificado (un solo viaje de red)
+            let syncData = null;
+            try {
+                const res = await fetch('/api/sync');
+                if (res.ok) {
+                    syncData = await res.json();
                 }
-            }
+            } catch (e) {}
 
-            if (kioskUser) {
-                const refreshedK = await fetch(`/api/users/by-tag/${kioskUser.tag_uid}`).then(r => r.json());
-                if (refreshedK && refreshedK.user) {
-                    setKioskUser({ ...refreshedK.user, active_loans: refreshedK.active_loans, bloqueado_por_puntos: refreshedK.bloqueado_por_puntos });
+            if (syncData && syncData.stats) {
+                setStats(syncData.stats);
+                setUsers(syncData.users || []);
+                setTools(syncData.tools || []);
+                setLoans(syncData.loans || []);
+                setLeaderboard(syncData.leaderboard || []);
+                setSettings(syncData.settings || {});
+                setTransactions(syncData.transactions || []);
+                setLoanRequests(syncData.requests || []);
+
+                if (currentUser && syncData.users) {
+                    const refreshed = syncData.users.find(u => u.id === currentUser.id);
+                    if (refreshed) {
+                        setCurrentUser(prev => ({ ...prev, ...refreshed }));
+                    }
+                }
+            } else {
+                // Fallback de seguridad si /api/sync no estuviera listo
+                const [statsRes, usersRes, toolsRes, loansRes, leadRes, setRes, txRes, reqsRes] = await Promise.all([
+                    fetch('/api/stats').then(r => r.json()),
+                    fetch('/api/users').then(r => r.json()),
+                    fetch('/api/tools').then(r => r.json()),
+                    fetch('/api/loans').then(r => r.json()),
+                    fetch('/api/leaderboard').then(r => r.json()),
+                    fetch('/api/settings').then(r => r.json()),
+                    fetch('/api/transactions').then(r => r.json()),
+                    fetch('/api/requests').then(r => r.json())
+                ]);
+                setStats(statsRes);
+                setUsers(usersRes);
+                setTools(toolsRes);
+                setLoans(loansRes);
+                setLeaderboard(leadRes);
+                setSettings(setRes);
+                setTransactions(txRes);
+                setLoanRequests(reqsRes);
+
+                if (currentUser) {
+                    const refreshed = usersRes.find(u => u.id === currentUser.id);
+                    if (refreshed) {
+                        setCurrentUser(prev => ({ ...prev, ...refreshed }));
+                    }
                 }
             }
         } catch (err) {
             console.error("Error al cargar datos:", err);
+        } finally {
+            isRefreshingRef.current = false;
         }
     };
 
     useEffect(() => {
         refreshAllData();
 
-        // 1. Polling periódico continuo cada 3 segundos (actualización automática sin recargar)
+        // 1. Polling inteligente: solo si la pestaña está activa y visible
         const pollInterval = setInterval(() => {
+            if (document.hidden) return;
             refreshAllData();
-        }, 3000);
+        }, 8000);
 
         // 2. Conexión SSE para recepción inmediata de eventos en tiempo real
         let evtSource = null;
         try {
             evtSource = new EventSource('/api/events');
-            evtSource.onmessage = () => {
-                try { refreshAllData(); } catch (e) {}
+            const handleEvent = () => {
+                refreshAllData();
             };
-            evtSource.addEventListener('message', () => {
-                try { refreshAllData(); } catch (e) {}
-            });
-            evtSource.addEventListener('user_created', () => {
-                try { refreshAllData(); } catch (e) {}
-            });
-            evtSource.addEventListener('user_deleted', () => {
-                try { refreshAllData(); } catch (e) {}
-            });
-            evtSource.addEventListener('loan_updated', () => {
-                try { refreshAllData(); } catch (e) {}
-            });
-            evtSource.addEventListener('tool_updated', () => {
-                try { refreshAllData(); } catch (e) {}
-            });
+            evtSource.onmessage = handleEvent;
+            evtSource.addEventListener('message', handleEvent);
+            evtSource.addEventListener('user_created', handleEvent);
+            evtSource.addEventListener('user_deleted', handleEvent);
+            evtSource.addEventListener('loan_updated', handleEvent);
+            evtSource.addEventListener('tool_updated', handleEvent);
             evtSource.onerror = () => {
-                // Si la conexión SSE se reconecta o corta, el polling continuo de 3s mantiene todo fresco
+                // El polling de respaldo mantiene la reactividad si SSE se reconecta
             };
         } catch (e) {}
 
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                refreshAllData();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             clearInterval(pollInterval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (evtSource) {
                 try { evtSource.close(); } catch (e) {}
+            }
+        };
+    }, []);
             }
         };
     }, [currentUser?.id]);
