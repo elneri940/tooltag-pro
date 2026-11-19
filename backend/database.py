@@ -56,6 +56,7 @@ class PGConnectionWrapper:
         self._raw_conn.close()
 
 from decimal import Decimal
+from datetime import datetime as dt_type, date as d_type
 
 def _clean_pg_row(row):
     if not row:
@@ -64,6 +65,8 @@ def _clean_pg_row(row):
     for k, v in d.items():
         if isinstance(v, Decimal):
             d[k] = float(v) if '.' in str(v) else int(v)
+        elif isinstance(v, (dt_type, d_type)):
+            d[k] = v.strftime("%Y-%m-%d %H:%M:%S")
     return d
 
 class PGCursorWrapper:
