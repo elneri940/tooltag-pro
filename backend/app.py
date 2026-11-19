@@ -568,8 +568,10 @@ async def api_login(request):
         WHERE LOWER(email) = LOWER(?) 
            OR LOWER(nombre) = LOWER(?)
            OR LOWER(tag_uid) = LOWER(?)
-           OR LOWER(SUBSTR(email, 1, INSTR(email, '@') - 1)) = LOWER(?)
-    """, (identifier, identifier, identifier, identifier), one=True)
+    """, (identifier, identifier, identifier), one=True)
+
+    if not user and "@" not in identifier:
+        user = query_db("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (f"{identifier.lower()}@uaem.edu.mx",), one=True)
 
     if not user:
         user = query_db("SELECT * FROM users WHERE LOWER(nombre) LIKE LOWER(?)", (f"%{identifier}%",), one=True)

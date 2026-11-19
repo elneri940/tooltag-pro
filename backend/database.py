@@ -20,6 +20,8 @@ def adapt_query_for_pg(query):
     q = query
     # Adaptar funciones de fecha
     q = re.sub(r"datetime\('now'(\s*,\s*'localtime')?\)", "CURRENT_TIMESTAMP", q, flags=re.IGNORECASE)
+    # Adaptar INSTR a STRPOS / POSITION
+    q = re.sub(r"INSTR\s*\(([^,]+),\s*([^)]+)\)", r"STRPOS(\1, \2)", q, flags=re.IGNORECASE)
     # Adaptar INSERT OR REPLACE a ON CONFLICT en Postgres
     if "INSERT OR REPLACE INTO system_settings" in q:
         q = ("INSERT INTO system_settings (key, value, descripcion) VALUES (%s, %s, %s) "
