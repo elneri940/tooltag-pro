@@ -197,11 +197,23 @@ def init_db():
         );
         """)
 
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS verification_codes (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            used INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_tag ON users(tag_uid);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_tools_tag ON tools(tag_uid);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_loans_active ON loans(user_id, estado);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_points_user ON point_transactions(user_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_requests_pending ON loan_requests(estado);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_verification_codes_lookup ON verification_codes(email, code, used);")
 
         conn.commit()
         conn.close()
@@ -284,6 +296,17 @@ def init_db():
         respuesta_admin TEXT,
         fecha_resolucion TEXT,
         loan_id INTEGER REFERENCES loans(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS verification_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        code TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
     );
     """)

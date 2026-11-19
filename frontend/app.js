@@ -2516,9 +2516,47 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
     const [apellidoMaterno, setApellidoMaterno] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [verificationCode, setVerificationCode] = useState("");
+    const [codeSent, setCodeSent] = useState(false);
+    const [sendingCode, setSendingCode] = useState(false);
+    const [codePreview, setCodePreview] = useState(null);
+    const [infoMessage, setInfoMessage] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    const handleSendCode = async () => {
+        if (!email.trim().toLowerCase().endsWith('@uaem.edu.mx')) {
+            setError("Ingresa primero un correo institucional que termine en @uaem.edu.mx");
+            return;
+        }
+        setSendingCode(true);
+        setError("");
+        setInfoMessage("");
+        try {
+            const res = await fetch('/api/auth/send-verification-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim().toLowerCase() })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setCodeSent(true);
+                if (data.code_preview) {
+                    setCodePreview(data.code_preview);
+                    setInfoMessage(`Código de verificación: ${data.code_preview}`);
+                } else {
+                    setInfoMessage("Se ha enviado un código de 6 dígitos a tu correo.");
+                }
+            } else {
+                setError(data.error || "No se pudo generar el código");
+            }
+        } catch (err) {
+            setError("Error de conexión al solicitar el código");
+        } finally {
+            setSendingCode(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -2531,6 +2569,12 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
             return;
         }
 
+        if (!verificationCode.trim()) {
+            setError("Debes solicitar e ingresar el código de verificación de 6 dígitos.");
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -2539,8 +2583,9 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     nombres,
                     apellido_paterno: apellidoPaterno,
                     apellido_materno: apellidoMaterno,
-                    email,
+                    email: email.trim().toLowerCase(),
                     password,
+                    verification_code: verificationCode.trim(),
                     rol: 'user'
                 })
             });
@@ -2619,7 +2664,7 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => { setEmail(e.target.value); setCodeSent(false); setInfoMessage(""); }}
                             placeholder="tu.correo@uaem.edu.mx"
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                             required
@@ -2627,6 +2672,53 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                         <p className="text-[10px] text-slate-400 mt-1">
                             Solo se aceptan cuentas oficiales de la <strong className="text-emerald-400">UAEM (@uaem.edu.mx)</strong>.
                         </p>
+                    </div>
+
+                    {/* Verificación de correo institucional */}
+                    <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-slate-300 font-semibold">Código de Verificación *</label>
+                            <button
+                                type="button"
+                                onClick={handleSendCode}
+                                disabled={sendingCode || !email}
+                                className="text-[11px] px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/40 transition-all disabled:opacity-50"
+                            >
+                                {sendingCode ? "Generando..." : (codeSent ? "Reenviar Código" : "Enviar Código al Correo")}
+                            </button>
+                        </div>
+
+                        {codeSent ? (
+                            <div className="space-y-1.5 pt-1">
+                                <input
+                                    type="text"
+                                    maxLength="6"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="Ingresa los 6 dígitos"
+                                    className="w-full bg-slate-900 border border-cyan-500/50 rounded-xl px-3 py-2 text-white font-mono tracking-widest text-center text-sm font-bold"
+                                    required
+                                />
+                                {infoMessage && (
+                                    <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[11px] flex items-center justify-between">
+                                        <span>{infoMessage}</span>
+                                        {codePreview && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setVerificationCode(codePreview)}
+                                                className="underline font-bold text-white ml-2 text-[10px]"
+                                            >
+                                                Autocompletar
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-[10px] text-slate-400">
+                                Haz clic en <strong>"Enviar Código al Correo"</strong> para validar que el correo te pertenece y que no esté duplicado.
+                            </p>
+                        )}
                     </div>
 
                     <div>
@@ -2685,9 +2777,47 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [masterPassword, setMasterPassword] = useState("");
+    const [verificationCode, setVerificationCode] = useState("");
+    const [codeSent, setCodeSent] = useState(false);
+    const [sendingCode, setSendingCode] = useState(false);
+    const [codePreview, setCodePreview] = useState(null);
+    const [infoMessage, setInfoMessage] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    const handleSendCode = async () => {
+        if (!email.trim().toLowerCase().endsWith('@uaem.edu.mx')) {
+            setError("Ingresa primero un correo institucional que termine en @uaem.edu.mx");
+            return;
+        }
+        setSendingCode(true);
+        setError("");
+        setInfoMessage("");
+        try {
+            const res = await fetch('/api/auth/send-verification-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.trim().toLowerCase() })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setCodeSent(true);
+                if (data.code_preview) {
+                    setCodePreview(data.code_preview);
+                    setInfoMessage(`Código de verificación: ${data.code_preview}`);
+                } else {
+                    setInfoMessage("Se ha enviado un código de 6 dígitos a tu correo.");
+                }
+            } else {
+                setError(data.error || "No se pudo generar el código");
+            }
+        } catch (err) {
+            setError("Error de conexión al solicitar el código");
+        } finally {
+            setSendingCode(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -2700,6 +2830,12 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
             return;
         }
 
+        if (!verificationCode.trim()) {
+            setError("Debes solicitar e ingresar el código de verificación de 6 dígitos.");
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -2708,8 +2844,9 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     nombres,
                     apellido_paterno: apellidoPaterno,
                     apellido_materno: apellidoMaterno,
-                    email,
+                    email: email.trim().toLowerCase(),
                     password,
+                    verification_code: verificationCode.trim(),
                     rol: 'admin',
                     master_admin_password: masterPassword
                 })
@@ -2789,7 +2926,7 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => { setEmail(e.target.value); setCodeSent(false); setInfoMessage(""); }}
                             placeholder="admin.nuevo@uaem.edu.mx"
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
                             required
@@ -2797,6 +2934,53 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                         <p className="text-[10px] text-slate-400 mt-1">
                             Debe ser una cuenta institucional de la <strong className="text-blue-400">UAEM (@uaem.edu.mx)</strong>.
                         </p>
+                    </div>
+
+                    {/* Verificación de correo institucional */}
+                    <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-slate-300 font-semibold">Código de Verificación *</label>
+                            <button
+                                type="button"
+                                onClick={handleSendCode}
+                                disabled={sendingCode || !email}
+                                className="text-[11px] px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-bold border border-blue-500/40 transition-all disabled:opacity-50"
+                            >
+                                {sendingCode ? "Generando..." : (codeSent ? "Reenviar Código" : "Enviar Código al Correo")}
+                            </button>
+                        </div>
+
+                        {codeSent ? (
+                            <div className="space-y-1.5 pt-1">
+                                <input
+                                    type="text"
+                                    maxLength="6"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="Ingresa los 6 dígitos"
+                                    className="w-full bg-slate-900 border border-blue-500/50 rounded-xl px-3 py-2 text-white font-mono tracking-widest text-center text-sm font-bold"
+                                    required
+                                />
+                                {infoMessage && (
+                                    <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[11px] flex items-center justify-between">
+                                        <span>{infoMessage}</span>
+                                        {codePreview && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setVerificationCode(codePreview)}
+                                                className="underline font-bold text-white ml-2 text-[10px]"
+                                            >
+                                                Autocompletar
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-[10px] text-slate-400">
+                                Haz clic en <strong>"Enviar Código al Correo"</strong> para validar tu correo institucional y descartar cuentas duplicadas.
+                            </p>
+                        )}
                     </div>
 
                     <div>

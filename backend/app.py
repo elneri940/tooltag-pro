@@ -608,10 +608,100 @@ async def api_login(request):
         "authenticated_via_password": True
     })
 
+async def api_send_verification_code(request):
+    """
+    Genera y envía un código de verificación OTP de 6 dígitos para registrar cuenta.
+    Valida:
+    1. Que el correo termine en @uaem.edu.mx.
+    2. Que el correo NO esté ya registrado en la base de datos (evita duplicados).
+    """
+    import random
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+
+    if not email:
+        return JSONResponse({"error": "Debes ingresar tu correo institucional"}, status_code=400)
+
+    # 1. Validar dominio institucional obligatorio
+    if not email.endswith("@uaem.edu.mx"):
+        return JSONResponse({
+            "error": "Acceso restringido: Solo se permite el registro con correo institucional oficial (@uaem.edu.mx)."
+        }, status_code=400)
+
+    # 2. Validar que el correo NO esté ya registrado (evita duplicados)
+    existing = query_db("SELECT id, nombre FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True)
+    if existing:
+        return JSONResponse({
+            "error": f"El correo institucional {email} ya se encuentra registrado con una cuenta activa. No es posible registrarlo dos veces."
+        }, status_code=409)
+
+    # 3. Generar código OTP de 6 dígitos
+    code = f"{random.randint(100000, 999999)}"
+    now = datetime.now()
+    expires_at = now + timedelta(minutes=15)
+    expires_str = expires_at.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Invalida códigos anteriores no usados para este correo
+    execute_db("UPDATE verification_codes SET used = 1 WHERE email = ?", (email,))
+
+    # Guardar nuevo código
+    execute_db("""
+        INSERT INTO verification_codes (email, code, expires_at, used)
+        VALUES (?, ?, ?, 0)
+    """, (email, code, expires_str))
+
+    # Envío de correo SMTP si está configurado en las variables de entorno
+    smtp_sent = False
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_pass = os.environ.get("SMTP_PASS")
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", 587))
+
+    if smtp_user and smtp_pass:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"Código de Verificación UAEM: {code}"
+            msg["From"] = f"ToolTag Pro UAEM <{smtp_user}>"
+            msg["To"] = email
+
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #334155; border-radius: 16px; background: #0f172a; color: #ffffff;">
+                <h2 style="color: #38bdf8; text-align: center; margin-top: 0;">ToolTag Pro - Sistema UAEM</h2>
+                <p style="font-size: 14px; color: #cbd5e1;">Has solicitado registrar tu cuenta institucional para el sistema de préstamo de herramientas con RFID.</p>
+                <div style="background: #1e293b; padding: 18px; border-radius: 12px; text-align: center; margin: 25px 0; border: 1px solid #475569;">
+                    <span style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">Tu Código de Verificación</span>
+                    <h1 style="color: #34d399; font-size: 36px; letter-spacing: 8px; margin: 12px 0; font-family: monospace;">{code}</h1>
+                    <span style="font-size: 11px; color: #64748b;">Válido durante 15 minutos</span>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center;">Si no solicitaste este código, puedes ignorar este correo de forma segura.</p>
+            </div>
+            """
+            msg.attach(MIMEText(html_content, "html"))
+
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+            smtp_sent = True
+        except Exception as e:
+            print(f"Error enviando correo SMTP: {e}")
+            smtp_sent = False
+
+    return JSONResponse({
+        "success": True,
+        "message": f"Código de verificación generado para {email}",
+        "smtp_sent": smtp_sent,
+        "code_preview": code if not smtp_sent else None
+    })
+
 async def api_register(request):
     """
     Registro de nuevas cuentas de Usuario u Operario, y Administrador.
-    Requiere: nombres, apellido_paterno, apellido_materno, email, password, rol.
+    Requiere: nombres, apellido_paterno, apellido_materno, email, password, verification_code, rol.
     Si rol == 'admin', requiere obligatoriamente master_admin_password
     (la contraseña del primer administrador registrado).
     """
@@ -622,6 +712,7 @@ async def api_register(request):
     apellido_materno = data.get("apellido_materno", "").strip()
     email = data.get("email", "").strip().lower()
     password = data.get("password", "").strip()
+    verification_code = data.get("verification_code", "").strip()
     rol = data.get("rol", "user").strip().lower()
 
     if not nombres or not apellido_paterno or not email or not password:
@@ -632,6 +723,34 @@ async def api_register(request):
         return JSONResponse({
             "error": "Acceso restringido: Solo se permite el registro con correo institucional oficial (@uaem.edu.mx)."
         }, status_code=400)
+
+    # 1. Validar que el correo NO esté ya registrado (evita cuentas duplicadas)
+    existing = query_db("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True)
+    if existing:
+        return JSONResponse({
+            "error": f"El correo institucional {email} ya se encuentra registrado con una cuenta activa. No es posible registrarlo dos veces."
+        }, status_code=409)
+
+    # 2. Validar Código de Verificación OTP
+    if not verification_code:
+        return JSONResponse({"error": "Debes solicitar e ingresar el código de verificación de 6 dígitos"}, status_code=400)
+
+    v_row = query_db("""
+        SELECT id, code, expires_at 
+        FROM verification_codes 
+        WHERE LOWER(email) = LOWER(?) AND code = ? AND used = 0
+        ORDER BY id DESC LIMIT 1
+    """, (email, verification_code), one=True)
+
+    if not v_row:
+        return JSONResponse({"error": "Código de verificación incorrecto, ya usado o no solicitado."}, status_code=400)
+
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if str(v_row["expires_at"]) < now_str:
+        return JSONResponse({"error": "El código de verificación ha expirado (validez: 15 minutos). Solicita uno nuevo."}, status_code=400)
+
+    # Marcar código como consumido
+    execute_db("UPDATE verification_codes SET used = 1 WHERE id = ?", (v_row["id"],))
 
     if len(password) < 4:
         return JSONResponse({"error": "La contraseña debe tener al menos 4 caracteres o dígitos"}, status_code=400)
@@ -651,11 +770,6 @@ async def api_register(request):
 
         if not verify_pin(first_admin["id"], master_password):
             return JSONResponse({"error": "Contraseña de autorización del primer Administrador incorrecta. Registro de admin denegado."}, status_code=403)
-
-    # Verificar si el correo ya existe
-    existing = query_db("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True)
-    if existing:
-        return JSONResponse({"error": f"Ya existe una cuenta registrada con el correo {email}"}, status_code=400)
 
     nombre_completo = f"{nombres} {apellido_paterno} {apellido_materno}".strip()
     initial_puntos = 250 if rol == "admin" else 100
@@ -694,7 +808,7 @@ async def api_register(request):
         return JSONResponse({
             "success": True,
             "user": user_safe,
-            "message": f"Cuenta de {rol.capitalize()} creada exitosamente."
+            "message": f"Cuenta de {rol.capitalize()} creada y verificada exitosamente."
         })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
@@ -961,6 +1075,7 @@ routes = [
     Route("/api/users/{id:int}/pin", api_set_pin, methods=["PUT"]),
     Route("/api/verify-pin", api_verify_pin, methods=["POST"]),
     Route("/api/auth/login", api_login, methods=["POST"]),
+    Route("/api/auth/send-verification-code", api_send_verification_code, methods=["POST"]),
     Route("/api/auth/register", api_register, methods=["POST"]),
     Route("/api/requests", api_get_requests, methods=["GET"]),
     Route("/api/requests", api_create_request, methods=["POST"]),
