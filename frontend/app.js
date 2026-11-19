@@ -588,7 +588,7 @@ function App() {
         }
     };
 
-    // Reinicio Demo
+    // Reinicio del sistema
     const handleResetSeed = async () => {
         if (!confirm("¿Deseas reiniciar la base de datos a los datos de prueba oficiales?")) return;
         try {
@@ -726,7 +726,7 @@ function App() {
                                 <button
                                     onClick={() => setAdminTab('users')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                        adminTab === 'users' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                        adminTab === 'users' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                                     }`}
                                 >
                                     <IconUser className="w-3.5 h-3.5" />
@@ -736,7 +736,7 @@ function App() {
                                 <button
                                     onClick={() => setAdminTab('settings')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                        adminTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                        adminTab === 'settings' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                                     }`}
                                 >
                                     <IconSliders className="w-3.5 h-3.5" />
@@ -746,7 +746,7 @@ function App() {
                                 <button
                                     onClick={() => setAdminTab('kiosk')}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                        adminTab === 'kiosk' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                        adminTab === 'kiosk' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                                     }`}
                                 >
                                     <IconRadio className="w-3.5 h-3.5" />
@@ -759,7 +759,7 @@ function App() {
                                 <button
                                     onClick={() => setSimulatorOpen(!simulatorOpen)}
                                     className={`p-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                                        simulatorOpen ? 'bg-blue-600/20 text-cyan-300 border-cyan-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'
+                                        simulatorOpen ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30' : 'bg-purple-950/60 text-purple-200 border-purple-500/40 hover:bg-purple-900'
                                     }`}
                                     title="Alternar Simulador RFID"
                                 >
@@ -768,7 +768,7 @@ function App() {
 
                                 <button
                                     onClick={() => setAdminProfileOpen(true)}
-                                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                                    className="p-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900 text-purple-200 border border-purple-500/40"
                                     title="Editar Perfil de Administrador"
                                 >
                                     <IconUser className="w-4 h-4" />
@@ -776,7 +776,7 @@ function App() {
 
                                 <button
                                     onClick={handleLogout}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800/40 text-rose-300 text-xs font-bold transition-all"
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 text-xs font-bold transition-all"
                                     title="Cerrar Sesión"
                                 >
                                     <IconLogOut className="w-3.5 h-3.5" />
@@ -856,7 +856,7 @@ function App() {
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                            className="px-3 py-1.5 rounded-xl bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-semibold transition-all"
                         >
                             Volver al Portal Principal
                         </button>
@@ -960,10 +960,10 @@ function App() {
 
             {/* MODAL DE PIN DE SEGURIDAD PARA PRÉSTAMO */}
             {pinModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
-                        <div className="w-16 h-16 rounded-full bg-cyan-500/10 border-2 border-cyan-500/40 flex items-center justify-center mx-auto">
-                            <IconLock className="w-8 h-8 text-cyan-400" />
+                <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 shadow-purple-600/20">
+                        <div className="flex justify-center mb-1">
+                            <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-14 h-14 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white">Verificación de Seguridad</h3>
@@ -1005,7 +1005,7 @@ function App() {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => { setPinModalOpen(false); setPendingCheckout(null); setPinInput(""); }}
-                                className="flex-1 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300"
+                                className="flex-1 py-2 rounded-xl text-xs font-semibold bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200"
                             >
                                 Cancelar
                             </button>
@@ -1017,7 +1017,7 @@ function App() {
                                         setPinError("El PIN debe tener al menos 4 dígitos");
                                     }
                                 }}
-                                className="flex-1 py-2 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg"
+                                className="flex-1 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30"
                             >
                                 Verificar y Prestar
                             </button>
@@ -1042,12 +1042,10 @@ function App() {
 
             {/* MODAL DE AJUSTE MANUAL DE PUNTOS */}
             {adjustPointsModalOpen && targetUserForPoints && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
-                                <IconSliders className="w-5 h-5" />
-                            </div>
+                            <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30" />
                             <div>
                                 <h3 className="font-bold text-lg text-white">Ajuste Manual de Puntos</h3>
                                 <p className="text-xs text-slate-400">Usuario: {targetUserForPoints.nombre} (Saldo: {targetUserForPoints.puntos} pts)</p>
@@ -1083,13 +1081,13 @@ function App() {
                             <div className="flex justify-end gap-2 pt-2">
                                 <button
                                     onClick={() => setAdjustPointsModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                                    className="px-4 py-2 rounded-xl bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-semibold"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={submitAdjustPoints}
-                                    className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold"
+                                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-md shadow-purple-600/30"
                                 >
                                     Aplicar al Ledger
                                 </button>
@@ -1210,13 +1208,7 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
                         <IconRadio className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Simulador RFID</span>
                     </button>
-                    <button
-                        onClick={onResetSeed}
-                        className="p-1.5 rounded-xl bg-[#0d061a] border border-purple-900/60 text-purple-400 hover:text-amber-400"
-                        title="Reiniciar datos de prueba a estado original"
-                    >
-                        <IconRefreshCw className="w-4 h-4" />
-                    </button>
+
                 </div>
             </div>
 
@@ -1430,7 +1422,7 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
                         <button
                             onClick={() => setUserTab('my_loans')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                userTab === 'my_loans' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                userTab === 'my_loans' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                             }`}
                         >
                             <IconClock className="w-3.5 h-3.5" />
@@ -1445,7 +1437,7 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
                         <button
                             onClick={() => setUserTab('profile')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                userTab === 'profile' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                userTab === 'profile' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                             }`}
                         >
                             <IconUser className="w-3.5 h-3.5" />
@@ -1455,7 +1447,7 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
                         <button
                             onClick={() => setUserTab('leaderboard')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                                userTab === 'leaderboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow' : 'text-slate-400 hover:text-white'
+                                userTab === 'leaderboard' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-600/30' : 'text-purple-300/70 hover:text-white hover:bg-purple-950/50'
                             }`}
                         >
                             <IconTrophy className="w-3.5 h-3.5 text-amber-400" />
@@ -1468,7 +1460,7 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
                         <button
                             onClick={onToggleSimulator}
                             className={`p-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                                simulatorOpen ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400' : 'bg-slate-800 text-slate-300 border-slate-700'
+                                simulatorOpen ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-600/30' : 'bg-purple-950/60 text-purple-200 border-purple-500/40 hover:bg-purple-900'
                             }`}
                             title="Simulador RFID"
                         >
@@ -1477,7 +1469,7 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
 
                         <button
                             onClick={onLogout}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 border border-slate-700 text-slate-300 text-xs font-bold transition-all"
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 text-xs font-bold transition-all"
                             title="Cerrar Sesión"
                         >
                             <IconLogOut className="w-3.5 h-3.5" />
@@ -1592,8 +1584,8 @@ function UserPortalView({ currentUser, onLogout, userTab, setUserTab, tools, act
                                                     disabled={isBlocked}
                                                     className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 ${
                                                         isBlocked
-                                                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                                                            : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20'
+                                                            ? 'bg-purple-950/40 text-purple-400/50 border border-purple-950 cursor-not-allowed'
+                                                            : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30'
                                                     }`}
                                                 >
                                                     <IconClipboard className="w-4 h-4" />
@@ -1938,7 +1930,7 @@ function AdminDashboard({
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => onApproveRequest(req.id)}
-                                                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                                                className="flex-1 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30 transition-all flex items-center justify-center gap-1.5"
                                             >
                                                 <IconCheckCircle className="w-4 h-4" />
                                                 <span>Aceptar y Autorizar Préstamo</span>
@@ -2060,7 +2052,7 @@ function AdminDashboard({
                                             <td className="py-3 px-4 text-right">
                                                 <button
                                                     onClick={() => onCheckin(l.id)}
-                                                    className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md"
+                                                    className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30"
                                                 >
                                                     Registrar Devolución
                                                 </button>
@@ -2084,7 +2076,7 @@ function AdminDashboard({
                         </div>
                         <button
                             onClick={onNewTool}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30"
                         >
                             <IconPlus className="w-4 h-4" />
                             <span>Agregar Nueva Herramienta</span>
@@ -2127,7 +2119,7 @@ function AdminDashboard({
                                         <td className="py-3 px-4 text-right space-x-2">
                                             <button
                                                 onClick={() => onEditTool(t)}
-                                                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                                                className="px-2.5 py-1 rounded-lg bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-semibold transition-all"
                                             >
                                                 Editar
                                             </button>
@@ -2156,7 +2148,7 @@ function AdminDashboard({
                         </div>
                         <button
                             onClick={onNewUser}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30"
                         >
                             <IconPlus className="w-4 h-4" />
                             <span>Registrar Nuevo Operario</span>
@@ -2210,7 +2202,7 @@ function AdminDashboard({
                                             </button>
                                             <button
                                                 onClick={() => onEditUser(u)}
-                                                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                                                className="px-2.5 py-1 rounded-lg bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-semibold transition-all"
                                             >
                                                 Editar
                                             </button>
@@ -2282,7 +2274,7 @@ function AdminDashboard({
                     <div className="pt-4 border-t border-slate-800 flex justify-end">
                         <button
                             onClick={() => onSaveSettings(localSettings)}
-                            className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg"
+                            className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30"
                         >
                             Guardar Parámetros de Gamificación
                         </button>
@@ -2328,16 +2320,23 @@ function ToolRequestModal({ tool, currentUser, onClose, onSubmit }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                 <div className="flex items-start justify-between">
-                    <div>
-                        <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
-                            Nueva Solicitud
-                        </span>
-                        <h3 className="text-lg font-bold text-white mt-1">{tool.nombre}</h3>
+                    <div className="flex items-center gap-3">
+                        <img 
+                            src="/static/logo_yecapixtla.jpg" 
+                            alt="EES Yecapixtla UAEM" 
+                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                        />
+                        <div>
+                            <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/40">
+                                Solicitud de Préstamo
+                            </span>
+                            <h3 className="text-lg font-bold text-white mt-1">{tool.nombre}</h3>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
                         <IconXCircle className="w-5 h-5" />
                     </button>
                 </div>
@@ -2387,14 +2386,14 @@ function ToolRequestModal({ tool, currentUser, onClose, onSubmit }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 bg-slate-800 rounded-xl text-slate-300 font-semibold"
+                            className="px-4 py-2 bg-purple-950/60 hover:bg-purple-900 rounded-xl border border-purple-500/40 text-purple-200 font-semibold"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl shadow-lg"
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30"
                         >
                             {isSubmitting ? "Enviando..." : "Enviar Solicitud al Administrador"}
                         </button>
@@ -2444,20 +2443,24 @@ function LoginAuthModal({ targetRole, onClose, onSuccess, onSwitchToRegister }) 
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 shadow-purple-600/20">
                 <div className="flex items-start justify-between">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                                targetRole === 'admin' ? 'bg-blue-500/20 text-blue-300' : 'bg-cyan-500/20 text-cyan-300'
-                            }`}>
-                                Acceso {targetRole === 'admin' ? 'Administrador' : 'Operario / Usuario'}
+                    <div className="flex items-center gap-3">
+                        <img 
+                            src="/static/logo_yecapixtla.jpg" 
+                            alt="EES Yecapixtla UAEM" 
+                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                        />
+                        <div>
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                Acceso {targetRole === 'admin' ? 'Administrador' : 'Alumno / Operario'}
                             </span>
+                            <h3 className="text-xl font-bold text-white mt-1">Iniciar Sesión</h3>
+                            <p className="text-[11px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
                         </div>
-                        <h3 className="text-xl font-bold text-white mt-1">Iniciar Sesión</h3>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
                         <IconXCircle className="w-5 h-5" />
                     </button>
                 </div>
@@ -2469,7 +2472,7 @@ function LoginAuthModal({ targetRole, onClose, onSuccess, onSwitchToRegister }) 
                             type="text"
                             value={identifier}
                             onChange={(e) => setIdentifier(e.target.value)}
-                            placeholder={targetRole === 'admin' ? "admin@taller.io" : "carlos.mendoza@taller.io"}
+                            placeholder={targetRole === 'admin' ? "admin@taller.io" : "tu.correo@uaem.edu.mx"}
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:border-cyan-500 focus:outline-none"
                             autoFocus
                             required
@@ -2506,11 +2509,7 @@ function LoginAuthModal({ targetRole, onClose, onSuccess, onSwitchToRegister }) 
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className={`w-full py-3 px-4 rounded-xl font-bold text-xs shadow-lg transition-all ${
-                            targetRole === 'admin'
-                                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20'
-                                : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20'
-                        }`}
+                        className="w-full py-3 px-4 rounded-xl font-bold text-xs shadow-lg transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30 flex items-center justify-center gap-2"
                     >
                         {isLoading ? "Verificando..." : "Entrar al Sistema"}
                     </button>
@@ -2519,7 +2518,7 @@ function LoginAuthModal({ targetRole, onClose, onSuccess, onSwitchToRegister }) 
                 <div className="pt-3 border-t border-slate-800 text-center">
                     <button
                         onClick={onSwitchToRegister}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 underline font-semibold"
+                        className="text-xs text-purple-300 hover:text-purple-100 underline font-semibold"
                     >
                         ¿No tienes cuenta? Regístrate aquí
                     </button>
@@ -2625,16 +2624,24 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                 <div className="flex items-start justify-between">
-                    <div>
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
-                            Registro de Operario
-                        </span>
-                        <h3 className="text-xl font-bold text-white mt-1">Crear Cuenta de Usuario</h3>
+                    <div className="flex items-center gap-3">
+                        <img 
+                            src="/static/logo_yecapixtla.jpg" 
+                            alt="EES Yecapixtla UAEM" 
+                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                        />
+                        <div>
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                Registro de Alumno / Operario
+                            </span>
+                            <h3 className="text-xl font-bold text-white mt-1">Crear Cuenta</h3>
+                            <p className="text-[11px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
                         <IconXCircle className="w-5 h-5" />
                     </button>
                 </div>
@@ -2704,7 +2711,7 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                                 type="button"
                                 onClick={handleSendCode}
                                 disabled={sendingCode || !email}
-                                className="text-[11px] px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold border border-cyan-500/40 transition-all disabled:opacity-50"
+                                className="text-[11px] px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold border border-purple-400/40 shadow-md shadow-purple-600/20 transition-all disabled:opacity-50"
                             >
                                 {sendingCode ? "Generando..." : (codeSent ? "Reenviar Código" : "Enviar Código al Correo")}
                             </button>
@@ -2773,7 +2780,7 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md mt-2"
+                        className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 mt-2 transition-all"
                     >
                         {isLoading ? "Creando Cuenta..." : "Registrarme e Iniciar"}
                     </button>
@@ -2887,16 +2894,24 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
                 <div className="flex items-start justify-between">
-                    <div>
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
-                            Alta de Administrador
-                        </span>
-                        <h3 className="text-xl font-bold text-white mt-1">Registrar Nuevo Admin</h3>
+                    <div className="flex items-center gap-3">
+                        <img 
+                            src="/static/logo_yecapixtla.jpg" 
+                            alt="EES Yecapixtla UAEM" 
+                            className="w-12 h-12 rounded-2xl object-contain bg-white/5 p-1 border-2 border-purple-500/40 shadow-md shadow-purple-600/30"
+                        />
+                        <div>
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                Alta de Administrador
+                            </span>
+                            <h3 className="text-xl font-bold text-white mt-1">Registrar Nuevo Admin</h3>
+                            <p className="text-[11px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
                         <IconXCircle className="w-5 h-5" />
                     </button>
                 </div>
@@ -2966,7 +2981,7 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                                 type="button"
                                 onClick={handleSendCode}
                                 disabled={sendingCode || !email}
-                                className="text-[11px] px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-bold border border-blue-500/40 transition-all disabled:opacity-50"
+                                className="text-[11px] px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold border border-purple-400/40 shadow-md shadow-purple-600/20 transition-all disabled:opacity-50"
                             >
                                 {sendingCode ? "Generando..." : (codeSent ? "Reenviar Código" : "Enviar Código al Correo")}
                             </button>
@@ -3035,7 +3050,7 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                             type="password"
                             value={masterPassword}
                             onChange={(e) => setMasterPassword(e.target.value)}
-                            placeholder="•••• (demo: 0000)"
+                            placeholder="•••••••••• (Contraseña del Admin Maestro)"
                             className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-white font-mono"
                             required
                         />
@@ -3053,7 +3068,7 @@ function AdminRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md mt-2"
+                        className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 mt-2 transition-all"
                     >
                         {isLoading ? "Validando Autorización..." : "Registrar Administrador Autorizado"}
                     </button>
@@ -3132,7 +3147,7 @@ function KioskView({
                                 <button
                                     key={u.id}
                                     onClick={() => onScanSimulated(u.tag_uid)}
-                                    className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800 transition-all text-left"
+                                    className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0e071c] border border-purple-950 hover:border-purple-500/60 hover:bg-purple-950/40 transition-all text-left"
                                 >
                                     <img src={u.avatar_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"} className="w-8 h-8 rounded-full object-cover" />
                                     <div className="truncate">
@@ -3183,7 +3198,7 @@ function KioskView({
                         </div>
                         <button
                             onClick={() => setKioskUser(null)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-rose-500/20 hover:text-rose-300 border border-slate-700 text-slate-300 transition-all"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 hover:text-white transition-all"
                         >
                             <IconLogOut className="w-4 h-4" />
                             <span>Finalizar Sesión</span>
@@ -3208,7 +3223,7 @@ function KioskView({
                     disabled={isBlocked}
                     className={`pb-3 px-2 text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
                         isBlocked ? 'opacity-40 cursor-not-allowed border-transparent text-slate-500' :
-                        kioskTab === 'checkout' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-slate-400 hover:text-white'
+                        kioskTab === 'checkout' ? 'border-purple-400 text-purple-300 font-bold' : 'border-transparent text-purple-400/60 hover:text-white'
                     }`}
                 >
                     <IconPlus className="w-4 h-4" />
@@ -3218,7 +3233,7 @@ function KioskView({
                 <button
                     onClick={() => setKioskTab('checkin')}
                     className={`pb-3 px-2 text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
-                        kioskTab === 'checkin' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-slate-400 hover:text-white'
+                        kioskTab === 'checkin' ? 'border-purple-400 text-purple-300 font-bold' : 'border-transparent text-purple-400/60 hover:text-white'
                     }`}
                 >
                     <IconCheckCircle className="w-4 h-4" />
@@ -3240,7 +3255,7 @@ function KioskView({
                                     {tool.estado === 'disponible' ? (
                                         <button
                                             onClick={() => setSelectedToolToCheckout(tool)}
-                                            className="w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs"
+                                            className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30"
                                         >
                                             Retirar Herramienta
                                         </button>
@@ -3273,7 +3288,7 @@ function KioskView({
                                     <p className="text-xs text-slate-400">Fecha límite: <span className="font-mono text-white">{loan.fecha_limite}</span></p>
                                     <button
                                         onClick={() => onCheckin(loan.id)}
-                                        className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs"
+                                        className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30"
                                     >
                                         Registrar Devolución Ahora
                                     </button>
@@ -3291,8 +3306,8 @@ function KioskView({
                         <p className="text-xs text-slate-300">{selectedToolToCheckout.nombre}</p>
                         <p className="text-xs text-cyan-400 font-bold">+10 puntos si devuelves en menos de {selectedToolToCheckout.tiempo_prestamo_horas} horas.</p>
                         <div className="flex gap-2 pt-2">
-                            <button onClick={() => setSelectedToolToCheckout(null)} className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancelar</button>
-                            <button onClick={() => onCheckout(kioskUser.id, selectedToolToCheckout.id)} className="flex-1 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs">Confirmar</button>
+                            <button onClick={() => setSelectedToolToCheckout(null)} className="flex-1 py-2 rounded-xl bg-purple-950/60 hover:bg-purple-900 border border-purple-500/40 text-purple-200 text-xs font-semibold">Cancelar</button>
+                            <button onClick={() => onCheckout(kioskUser.id, selectedToolToCheckout.id)} className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30">Confirmar</button>
                         </div>
                     </div>
                 </div>
@@ -3438,7 +3453,7 @@ function RFIDSimulatorDrawer({ isOpen, onClose, onScan, users, tools, customInpu
                 />
                 <button
                     onClick={() => { if (customInput) onScan(customInput); }}
-                    className="px-3 py-1 bg-cyan-500 text-slate-950 font-bold text-xs rounded-lg"
+                    className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-600/30 transition-all"
                 >
                     Escanear
                 </button>
@@ -3493,7 +3508,7 @@ function GamificationModal({ data, onClose }) {
 
                 <button
                     onClick={onClose}
-                    className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg"
+                    className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/30 transition-all"
                 >
                     Entendido
                 </button>
@@ -3519,11 +3534,20 @@ function ToolFormModal({ tool, onClose, onSave }) {
     });
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-                <h3 className="font-bold text-lg text-white">
-                    {tool ? "Editar Herramienta" : "Nueva Herramienta"}
-                </h3>
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 shadow-purple-600/20">
+                <div className="flex items-center justify-between pb-2 border-b border-purple-950">
+                    <div className="flex items-center gap-3">
+                        <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40" />
+                        <div>
+                            <h3 className="font-bold text-base text-white">{tool ? "Editar Herramienta" : "Nueva Herramienta"}</h3>
+                            <p className="text-[10px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
+                        <IconXCircle className="w-5 h-5" />
+                    </button>
+                </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="col-span-2">
@@ -3610,10 +3634,10 @@ function ToolFormModal({ tool, onClose, onSave }) {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                    <button onClick={onClose} className="px-4 py-2 bg-slate-800 rounded-xl text-xs text-slate-300">
+                    <button onClick={onClose} className="px-4 py-2 bg-purple-950/60 hover:bg-purple-900 rounded-xl border border-purple-500/40 text-xs text-purple-200">
                         Cancelar
                     </button>
-                    <button onClick={() => onSave(formData)} className="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs">
+                    <button onClick={() => onSave(formData)} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs shadow-md shadow-purple-600/30">
                         Guardar Herramienta
                     </button>
                 </div>
@@ -3634,11 +3658,20 @@ function UserFormModal({ user, onClose, onSave }) {
     });
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-                <h3 className="font-bold text-lg text-white">
-                    {user ? "Editar Operario / Usuario" : "Nuevo Operario"}
-                </h3>
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
+                <div className="flex items-center justify-between pb-2 border-b border-purple-950">
+                    <div className="flex items-center gap-3">
+                        <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40" />
+                        <div>
+                            <h3 className="font-bold text-base text-white">{user ? "Editar Operario / Usuario" : "Nuevo Operario"}</h3>
+                            <p className="text-[10px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
+                        <IconXCircle className="w-5 h-5" />
+                    </button>
+                </div>
 
                 <div className="space-y-3 text-xs">
                     <div>
@@ -3709,10 +3742,10 @@ function UserFormModal({ user, onClose, onSave }) {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                    <button onClick={onClose} className="px-4 py-2 bg-slate-800 rounded-xl text-xs text-slate-300">
+                    <button onClick={onClose} className="px-4 py-2 bg-purple-950/60 hover:bg-purple-900 rounded-xl border border-purple-500/40 text-xs text-purple-200">
                         Cancelar
                     </button>
-                    <button onClick={() => onSave(formData)} className="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs">
+                    <button onClick={() => onSave(formData)} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs shadow-md shadow-purple-600/30">
                         Guardar Usuario
                     </button>
                 </div>
@@ -3758,11 +3791,17 @@ function AdminProfileModal({ users, onClose, onSave, showToast }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                    <h3 className="font-bold text-white text-base">Perfil de Administrador</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#0e071c] border-2 border-purple-900/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 shadow-purple-600/20">
+                <div className="flex justify-between items-center pb-2 border-b border-purple-950">
+                    <div className="flex items-center gap-3">
+                        <img src="/static/logo_yecapixtla.jpg" alt="EES Yecapixtla UAEM" className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 border border-purple-500/40" />
+                        <div>
+                            <h3 className="font-bold text-base text-white">Perfil de Administrador</h3>
+                            <p className="text-[10px] text-purple-300/70">EES Yecapixtla &bull; UAEM</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-purple-400 hover:text-white">
                         <IconXCircle className="w-5 h-5" />
                     </button>
                 </div>
@@ -3824,10 +3863,10 @@ function AdminProfileModal({ users, onClose, onSave, showToast }) {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                    <button onClick={onClose} className="px-4 py-2 bg-slate-800 rounded-xl text-slate-300 text-xs font-semibold">
+                    <button onClick={onClose} className="px-4 py-2 bg-purple-950/60 hover:bg-purple-900 rounded-xl border border-purple-500/40 text-purple-200 text-xs font-semibold">
                         Cancelar
                     </button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs">
+                    <button onClick={handleSave} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs shadow-md shadow-purple-600/30">
                         Guardar Perfil
                     </button>
                 </div>

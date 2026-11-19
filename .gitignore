@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+*$py.class
+rfid_inventory.db
+.env
+subir_a_github.bat

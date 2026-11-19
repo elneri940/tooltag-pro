@@ -5,24 +5,21 @@ from .gamification import update_setting, DEFAULT_SETTINGS, format_datetime, has
 ADMIN_MAESTRO_PASSWORD = "M9#xK4!vR2"
 
 def clean_demo_and_ensure_admin_maestro():
-    """Limpia los perfiles de demo específicos y asegura la existencia y clave del Admin Maestro."""
+    """Limpia absolutamente cualquier perfil de demo y asegura únicamente al Admin Maestro."""
     init_db()
     conn = get_connection()
     try:
         cur = conn.cursor()
-        demo_emails = ('carlos.mendoza@taller.io', 'maria.gonzalez@taller.io', 'juan.perez@taller.io')
+        # 1. Eliminar cualquier usuario que no sea institucional de la UAEM ni el Admin Maestro
+        cur.execute("DELETE FROM loan_requests WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io');")
+        cur.execute("DELETE FROM point_transactions WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io');")
+        cur.execute("DELETE FROM loans WHERE user_id IN (SELECT id FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io');")
+        cur.execute("DELETE FROM users WHERE email NOT LIKE '%@uaem.edu.mx' AND email != 'admin@taller.io';")
 
-        # 1. Eliminar datos asociados a las cuentas demo
-        for email in demo_emails:
-            cur.execute("DELETE FROM loan_requests WHERE user_id IN (SELECT id FROM users WHERE email = ?);", (email,))
-            cur.execute("DELETE FROM point_transactions WHERE user_id IN (SELECT id FROM users WHERE email = ?);", (email,))
-            cur.execute("DELETE FROM loans WHERE user_id IN (SELECT id FROM users WHERE email = ?);", (email,))
-            cur.execute("DELETE FROM users WHERE email = ?;", (email,))
-
-        # 2. Resetear herramientas a disponibles si estaban prestadas a demos
+        # 2. Resetear herramientas a disponibles si estaban prestadas a perfiles demo
         cur.execute("UPDATE tools SET estado = 'disponible' WHERE id NOT IN (SELECT tool_id FROM loans WHERE estado = 'activo');")
 
-        # 3. Crear o actualizar al Admin Maestro
+        # 3. Crear o actualizar al Admin Maestro con su clave segura
         cur.execute("SELECT id FROM users WHERE email = 'admin@taller.io';")
         admin_row = cur.fetchone()
         now = datetime.now()

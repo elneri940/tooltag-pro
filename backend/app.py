@@ -1046,7 +1046,14 @@ async def api_sse(request):
 # --- SERVIR FRONTEND ---
 async def serve_index(request):
     index_file = FRONTEND_DIR / "index.html"
-    return FileResponse(index_file)
+    return FileResponse(
+        index_file,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 # ==========================================
 # DEFINICIÓN DE APLICACIÓN STARLETTE
