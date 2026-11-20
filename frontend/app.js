@@ -357,9 +357,6 @@ function App() {
             }
         };
     }, []);
-            }
-        };
-    }, [currentUser?.id]);
 
     // Temporizador Kiosco
     useEffect(() => {
