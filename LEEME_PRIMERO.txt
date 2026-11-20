@@ -1,0 +1,106 @@
+=====================================================================
+ TOOLTAG PRO - PRESTAMO DE HERRAMIENTAS (EES Yecapixtla - UAEM)
+ GUIA PARA QUIEN RECIBE EL PROYECTO
+=====================================================================
+
+QUE ES
+------
+Pagina web para prestar herramientas del taller. Cada alumno se
+registra una vez; su tag NFC/RFID es solo un numero (UID) que en la
+base de datos apunta a su nombre, matricula y correo. Pide material,
+el administrador lo entrega y empieza a contar el plazo. Se ganan o
+pierden puntos segun devuelva a tiempo y en buen estado. Todo queda
+en un historial descargable a Excel.
+
+REQUISITOS
+----------
+- Windows (tambien funciona en Mac/Linux con los comandos de abajo).
+- Python 3.10 o mas nuevo (https://www.python.org/downloads/).
+  Al instalar, marca "Add python.exe to PATH".
+- Conexion a internet: la pagina carga React y Tailwind desde
+  internet (CDN). Sin internet la pantalla se queda en blanco.
+- Un navegador (Chrome, Edge o Firefox).
+
+COMO EJECUTARLO (FORMA FACIL, WINDOWS)
+--------------------------------------
+1. Descomprime la carpeta completa (no ejecutes desde dentro del zip).
+2. Doble clic en  instalar_y_ejecutar.bat
+   - Instala las dependencias y abre la pagina sola.
+   - Administrador:  admin@taller.io   Contrasena: admin1234
+3. Si la pagina no abre, entra a:  http://localhost:8090
+   (usa "localhost", no "0.0.0.0").
+Las siguientes veces basta con  iniciar_tooltag_pro.bat
+
+COMO EJECUTARLO (MANUAL, CUALQUIER SISTEMA)
+-------------------------------------------
+  cd carpeta_del_proyecto
+  python -m pip install -r requirements.txt
+  set ADMIN_PASSWORD=tu_clave        (Windows CMD)
+  $env:ADMIN_PASSWORD="tu_clave"     (PowerShell)
+  export ADMIN_PASSWORD=tu_clave     (Mac/Linux)
+  python run_server.py
+Abrir http://localhost:8090
+
+CAMBIAR EL PUERTO (si el 8090 esta ocupado)
+  set PORT=9000     y luego   python run_server.py
+  Abrir http://localhost:9000
+
+IMPORTANTE
+- La contrasena de administrador solo se aplica cuando se CREA la
+  base de datos (primer arranque). Para empezar de cero: cierra el
+  servidor y borra el archivo rfid_inventory.db.
+- Ver el estilo actualizado tras cambios: recargar con Ctrl+Shift+R.
+
+COMO PROBARLO (RECORRIDO SUGERIDO, 10 MINUTOS)
+----------------------------------------------
+1. Registrar un alumno: boton de registro -> nombre, apellidos,
+   matricula, correo y numero de tag (inventa uno, ej. AL-0001;
+   con un tag real, copia su numero de serie con la app NFC Tools).
+2. Como alumno: Catalogo -> agregar 1 o 2 herramientas al carrito ->
+   enviar solicitud (el motivo es opcional).
+3. Salir y entrar como administrador (admin@taller.io).
+4. Pestana Solicitudes -> "Aceptar solicitud" -> luego
+   "Entregar material". Aqui empieza a contar el plazo.
+5. Pestana Prestamos -> devolver, elegir estado (bien / con detalles /
+   danada) y ver los puntos que se suman o restan.
+6. Pestana Historial -> filtrar y "Descargar para Excel".
+7. Pestana Ajustes -> cambiar dias de prestamo, puntos y limites.
+8. Simulador RFID (boton arriba a la derecha): escribir un numero de
+   tag para simular que el lector lo leyo.
+
+REGLAS DE PUNTOS (editables en Ajustes)
+- Inicio: 100 puntos. Minimo para pedir: 20.
+- Devolver a tiempo y en buen estado: +10.
+- Retraso: -15 y -5 por hora.
+- Con detalles: -10. Danada: -30 y la herramienta pasa a mantenimiento.
+- Maximo de herramientas a la vez: 2. Plazo por defecto: 1 dia
+  (se puede cambiar globalmente o por persona).
+
+LECTOR RFID REAL
+- Funciona con lectores USB que escriben el numero como teclado y
+  terminan con Enter. La pagina lo detecta sola (no hay que
+  configurar nada).
+- Con celular: NFC Tools solo sirve para LEER el numero de serie;
+  luego se escribe en la pagina o en el Simulador.
+
+DONDE ESTA CADA COSA
+- run_server.py ............ arranca el servidor
+- backend/app.py ........... rutas y logica de la API
+- backend/gamification.py .. prestamos, devoluciones y puntos
+- backend/database.py ...... base de datos (SQLite)
+- backend/seed.py .......... datos iniciales (admin y herramientas)
+- frontend/app.js .......... toda la interfaz
+- RESUMEN_CAMBIOS.txt ...... que se implemento, quito y borro
+- README.md ................ documentacion tecnica
+
+ANTES DE USARLO EN SERIO
+- Borrar la cuenta de prueba y las herramientas de ejemplo.
+- Cambiar la contrasena del administrador.
+- Pendiente: autenticacion mas fuerte del panel admin y respaldos
+  de la base de datos (ver RESUMEN_CAMBIOS.txt).
+
+PROBLEMAS COMUNES
+- "ModuleNotFoundError": falta instalar:  python -m pip install -r requirements.txt
+- "address already in use": otro programa usa el puerto; usar PORT=9000.
+- Pagina en blanco: revisar internet (CDN) y recargar con Ctrl+Shift+R.
+- Se ve el diseno viejo: Ctrl+Shift+R o ventana de incognito.

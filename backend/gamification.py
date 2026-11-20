@@ -10,8 +10,18 @@ DEFAULT_SETTINGS = {
     "late_penalty_hourly": "5",
     "min_points_threshold": "20",
     "kiosk_timeout_seconds": "30",
-    "require_pin_for_loans": "false"
+    "require_pin_for_loans": "false",
+    # Días que se presta una herramienta (el admin lo cambia; cada persona puede tener el suyo)
+    "loan_days_default": "1",
+    # Máximo de herramientas por pedido
+    "max_tools_per_request": "2",
+    # Puntos que se restan según el estado en que regresa la herramienta
+    "damage_penalty_minor": "10",
+    "damage_penalty_major": "30"
 }
+
+# Estados válidos al devolver una herramienta
+CONDICIONES = ("bien", "con_detalles", "danada")
 
 def hash_pin(pin):
     """Genera hash SHA-256 de un PIN."""
@@ -115,81 +125,134 @@ def calculate_deadline(tiempo_horas, start_dt=None):
     deadline = start_dt + timedelta(hours=int(tiempo_horas))
     return format_datetime(deadline)
 
+def _checkout_one(cur, user_dict, tool_id, tiempo_horas):
+    """Registra la salida de UNA herramienta dentro de una transacción ya abierta."""
+    cur.execute("SELECT id, nombre, estado, tiempo_prestamo_horas FROM tools WHERE id = ?", (tool_id,))
+    tool = cur.fetchone()
+    if not tool:
+        raise ValueError(f"Herramienta con ID {tool_id} no encontrada.")
+
+    tool_dict = dict(tool)
+    if tool_dict["estado"] != "disponible":
+        raise ValueError(f"La herramienta '{tool_dict['nombre']}' no está disponible (Estado actual: {tool_dict['estado']}).")
+
+    ahora = datetime.now()
+    ahora_str = format_datetime(ahora)
+    limite_str = format_datetime(ahora + timedelta(hours=int(tiempo_horas)))
+
+    cur.execute("""
+        INSERT INTO loans (user_id, tool_id, fecha_prestamo, fecha_limite, estado)
+        VALUES (?, ?, ?, ?, 'activo')
+    """, (user_dict["id"], tool_id, ahora_str, limite_str))
+    loan_id = cur.lastrowid
+
+    cur.execute("UPDATE tools SET estado = 'prestada' WHERE id = ?", (tool_id,))
+
+    return {
+        "success": True,
+        "loan_id": loan_id,
+        "user": user_dict,
+        "tool": tool_dict,
+        "fecha_prestamo": ahora_str,
+        "fecha_limite": limite_str,
+        "tiempo_horas": int(tiempo_horas)
+    }
+
+def _validate_user_can_borrow(cur, user_id, settings, nuevas=1):
+    """Devuelve el usuario si puede pedir herramientas; si no, lanza ValueError."""
+    min_threshold = int(settings.get("min_points_threshold", 20))
+    max_tools = int(settings.get("max_tools_per_request", 2))
+    cur.execute("SELECT id, nombre, puntos, estado, dias_prestamo FROM users WHERE id = ?", (user_id,))
+    user = cur.fetchone()
+    if not user:
+        raise ValueError(f"Usuario con ID {user_id} no encontrado.")
+
+    user_dict = dict(user)
+    if user_dict["estado"] == "bloqueado":
+        raise ValueError(f"El usuario {user_dict['nombre']} se encuentra BLOQUEADO administrativamente.")
+
+    if user_dict["puntos"] < min_threshold:
+        raise ValueError(
+            f"Préstamo no permitido: {user_dict['nombre']} tiene {user_dict['puntos']} puntos "
+            f"(mínimo requerido: {min_threshold} puntos). Debe devolver herramientas pendientes o solicitar revisión."
+        )
+    # El límite cuenta también lo que ya tiene prestado y no ha devuelto
+    cur.execute("SELECT COUNT(*) AS n FROM loans WHERE user_id = ? AND estado = 'activo'", (user_id,))
+    row = cur.fetchone()
+    activos = (row[0] if isinstance(row, (tuple, list)) else row["n"]) or 0
+    if activos + nuevas > max_tools:
+        raise ValueError(
+            f"{user_dict['nombre']} tiene {activos} herramienta(s) sin devolver. "
+            f"El máximo permitido a la vez es {max_tools}."
+        )
+    return user_dict
+
+def resolve_loan_hours(user_dict, settings, custom_hours=None):
+    """
+    Horas de préstamo. Prioridad:
+    1) horas indicadas explícitamente, 2) días propios de la persona, 3) días generales del sistema.
+    """
+    if custom_hours is not None:
+        return int(custom_hours)
+    if user_dict.get("dias_prestamo"):
+        return int(user_dict["dias_prestamo"]) * 24
+    return int(settings.get("loan_days_default", 1)) * 24
+
 def process_loan_checkout(user_id, tool_id, custom_hours=None):
     """
     Registra la salida de una herramienta.
     Verifica que el usuario no esté bloqueado o con puntaje bajo, y que la herramienta esté disponible.
     """
     settings = get_settings()
-    min_threshold = int(settings.get("min_points_threshold", 20))
-
     conn = get_connection()
     try:
         conn.execute("BEGIN IMMEDIATE;")
         cur = conn.cursor()
-
-        # Verificar Usuario
-        cur.execute("SELECT id, nombre, puntos, estado FROM users WHERE id = ?", (user_id,))
-        user = cur.fetchone()
-        if not user:
-            raise ValueError(f"Usuario con ID {user_id} no encontrado.")
-        
-        user_dict = dict(user)
-        if user_dict["estado"] == "bloqueado":
-            raise ValueError(f"El usuario {user_dict['nombre']} se encuentra BLOQUEADO administrativamente.")
-        
-        if user_dict["puntos"] < min_threshold:
-            raise ValueError(
-                f"Préstamo no permitido: {user_dict['nombre']} tiene {user_dict['puntos']} puntos "
-                f"(mínimo requerido: {min_threshold} puntos). Debe devolver herramientas pendientes o solicitar revisión."
-            )
-
-        # Verificar Herramienta
-        cur.execute("SELECT id, nombre, estado, tiempo_prestamo_horas FROM tools WHERE id = ?", (tool_id,))
-        tool = cur.fetchone()
-        if not tool:
-            raise ValueError(f"Herramienta con ID {tool_id} no encontrada.")
-        
-        tool_dict = dict(tool)
-        if tool_dict["estado"] != "disponible":
-            raise ValueError(f"La herramienta '{tool_dict['nombre']}' no está disponible (Estado actual: {tool_dict['estado']}).")
-
-        # Calcular Fechas
-        ahora = datetime.now()
-        tiempo_horas = custom_hours if custom_hours is not None else tool_dict["tiempo_prestamo_horas"]
-        fecha_limite = ahora + timedelta(hours=int(tiempo_horas))
-
-        ahora_str = format_datetime(ahora)
-        limite_str = format_datetime(fecha_limite)
-
-        # Crear Préstamo
-        cur.execute("""
-            INSERT INTO loans (user_id, tool_id, fecha_prestamo, fecha_limite, estado)
-            VALUES (?, ?, ?, ?, 'activo')
-        """, (user_id, tool_id, ahora_str, limite_str))
-        loan_id = cur.lastrowid
-
-        # Marcar herramienta como prestada
-        cur.execute("UPDATE tools SET estado = 'prestada' WHERE id = ?", (tool_id,))
-
+        user_dict = _validate_user_can_borrow(cur, user_id, settings)
+        horas = resolve_loan_hours(user_dict, settings, custom_hours)
+        result = _checkout_one(cur, user_dict, tool_id, horas)
         conn.commit()
-
-        return {
-            "success": True,
-            "loan_id": loan_id,
-            "user": user_dict,
-            "tool": tool_dict,
-            "fecha_prestamo": ahora_str,
-            "fecha_limite": limite_str,
-            "tiempo_horas": tiempo_horas
-        }
+        return result
     except Exception as e:
         conn.rollback()
         raise e
     finally:
         conn.close()
 
-def process_loan_checkin(loan_id, return_dt=None):
+def process_multi_checkout(user_id, tool_ids, custom_hours=None):
+    """
+    Registra el pedido de varias herramientas a la vez (por defecto máximo 2).
+    Es todo o nada: si una no está disponible, no se presta ninguna.
+    """
+    settings = get_settings()
+    max_tools = int(settings.get("max_tools_per_request", 2))
+
+    # Quitar repetidos conservando el orden
+    ids = []
+    for t in tool_ids or []:
+        if t not in ids:
+            ids.append(t)
+    if not ids:
+        raise ValueError("Selecciona al menos una herramienta.")
+    if len(ids) > max_tools:
+        raise ValueError(f"Solo puedes pedir hasta {max_tools} herramientas por pedido.")
+
+    conn = get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE;")
+        cur = conn.cursor()
+        user_dict = _validate_user_can_borrow(cur, user_id, settings, nuevas=len(ids))
+        horas = resolve_loan_hours(user_dict, settings, custom_hours)
+        loans = [_checkout_one(cur, user_dict, tid, horas) for tid in ids]
+        conn.commit()
+        return {"success": True, "user": user_dict, "loans": loans, "fecha_limite": loans[0]["fecha_limite"]}
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+def process_loan_checkin(loan_id, return_dt=None, condicion="bien", notas=None):
     """
     Procesa la devolución de una herramienta.
     Aplica las reglas de gamificación:
@@ -234,11 +297,22 @@ def process_loan_checkin(loan_id, return_dt=None):
         # Cálculo de tiempo y penalización
         diff_seconds = (return_dt - limite_dt).total_seconds()
 
+        if condicion not in CONDICIONES:
+            raise ValueError(f"Estado de la herramienta no válido. Usa: {', '.join(CONDICIONES)}.")
+        if condicion == "danada":
+            penalty_damage = int(settings.get("damage_penalty_major", 30))
+        elif condicion == "con_detalles":
+            penalty_damage = int(settings.get("damage_penalty_minor", 10))
+        else:
+            penalty_damage = 0
+
         if diff_seconds <= 0:
-            # A TIEMPO O ANTICIPADA
+            # A TIEMPO O ANTICIPADA (el bono solo se da si regresó en buen estado)
             estado_final = "devuelto_a_tiempo"
-            puntos_delta = bonus_on_time
-            motivo = f"Devolución puntual de herramienta '{loan_dict['tool_nombre']}' (+{bonus_on_time} pts)"
+            bono = bonus_on_time if condicion == "bien" else 0
+            puntos_delta = bono
+            motivo = (f"Devolución puntual de herramienta '{loan_dict['tool_nombre']}' (+{bono} pts)"
+                      if bono else f"Devolución puntual de herramienta '{loan_dict['tool_nombre']}' (sin bono por estado)")
             horas_retraso = 0
         else:
             # RETRASO
@@ -250,6 +324,13 @@ def process_loan_checkin(loan_id, return_dt=None):
             puntos_delta = -total_penalty
             motivo = f"Devolución tardía ({horas_retraso}h retraso) de '{loan_dict['tool_nombre']}' (-{total_penalty} pts)"
 
+        if penalty_damage:
+            puntos_delta -= penalty_damage
+            etiqueta = "dañada" if condicion == "danada" else "con detalles"
+            motivo += f" | Regresó {etiqueta} (-{penalty_damage} pts)"
+        if notas:
+            motivo += f" | Nota: {notas}"
+
         # Actualizar Puntos del Usuario
         nuevo_saldo = max(0, loan_dict["user_puntos"] + puntos_delta)
         cur.execute("UPDATE users SET puntos = ? WHERE id = ?", (nuevo_saldo, loan_dict["user_id"]))
@@ -257,9 +338,9 @@ def process_loan_checkin(loan_id, return_dt=None):
         # Actualizar Préstamo
         cur.execute("""
             UPDATE loans
-            SET fecha_devolucion = ?, estado = ?
+            SET fecha_devolucion = ?, estado = ?, condicion = ?, notas_devolucion = ?
             WHERE id = ?
-        """, (return_str, estado_final, loan_id))
+        """, (return_str, estado_final, condicion, notas or None, loan_id))
 
         # Registrar en Ledger de Transacciones de Puntos
         cur.execute("""
@@ -268,8 +349,9 @@ def process_loan_checkin(loan_id, return_dt=None):
         """, (loan_dict["user_id"], loan_id, puntos_delta, motivo, nuevo_saldo, return_str))
         trans_id = cur.lastrowid
 
-        # Liberar Herramienta
-        cur.execute("UPDATE tools SET estado = 'disponible' WHERE id = ?", (loan_dict["tool_id"],))
+        # Liberar la herramienta; si regresó dañada pasa a mantenimiento
+        nuevo_estado_tool = "mantenimiento" if condicion == "danada" else "disponible"
+        cur.execute("UPDATE tools SET estado = ? WHERE id = ?", (nuevo_estado_tool, loan_dict["tool_id"]))
 
         conn.commit()
 
@@ -285,6 +367,7 @@ def process_loan_checkin(loan_id, return_dt=None):
             "nuevo_saldo": nuevo_saldo,
             "horas_retraso": horas_retraso,
             "motivo": motivo,
+            "condicion": condicion,
             "fecha_devolucion": return_str,
             "transaction_id": trans_id
         }
@@ -362,15 +445,15 @@ def get_leaderboard():
             # Asignación de Nivel Gamificado
             pts = r["puntos"]
             if pts >= 130:
-                nivel = {"nombre": "Diamante", "color": "text-cyan-400", "badge": "💎", "bg": "bg-cyan-500/10 border-cyan-500/30"}
+                nivel = {"nombre": "Diamante", "color": "text-blue-700", "badge": "💎", "bg": "bg-blue-50 border-blue-200"}
             elif pts >= 110:
-                nivel = {"nombre": "Oro", "color": "text-amber-400", "badge": "🥇", "bg": "bg-amber-500/10 border-amber-500/30"}
+                nivel = {"nombre": "Oro", "color": "text-amber-700", "badge": "🥇", "bg": "bg-amber-50 border-amber-200"}
             elif pts >= 90:
-                nivel = {"nombre": "Plata", "color": "text-slate-300", "badge": "🥈", "bg": "bg-slate-400/10 border-slate-400/30"}
+                nivel = {"nombre": "Plata", "color": "text-slate-700", "badge": "🥈", "bg": "bg-slate-100 border-slate-300"}
             elif pts >= 50:
-                nivel = {"nombre": "Bronce", "color": "text-orange-400", "badge": "🥉", "bg": "bg-orange-500/10 border-orange-500/30"}
+                nivel = {"nombre": "Bronce", "color": "text-amber-700", "badge": "🥉", "bg": "bg-amber-50 border-amber-200"}
             else:
-                nivel = {"nombre": "En Riesgo", "color": "text-rose-400", "badge": "⚠️", "bg": "bg-rose-500/10 border-rose-500/30"}
+                nivel = {"nombre": "En Riesgo", "color": "text-rose-700", "badge": "⚠️", "bg": "bg-rose-50 border-rose-200"}
 
             ranked.append({
                 **r,

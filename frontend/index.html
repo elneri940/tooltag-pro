@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EES Yecapixtla UAEM - Sistema de Préstamo de Herramientas RFID</title>
-    <link rel="icon" type="image/png" href="/static/logo_yecapixtla.png?v=20261119_v16">
+    <title>Préstamo de Herramientas - EES Yecapixtla UAEM</title>
+    <link rel="icon" type="image/png" href="/static/logo_yecapixtla.png?v=20261120_v19">
     <!-- Aceleración de conexión CDN para móviles -->
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
@@ -13,39 +13,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            800: '#1c1033',
-                            850: '#140a26',
-                            900: '#0d061a',
-                            950: '#07030f',
-                        },
-                        purple: {
-                            950: '#190633',
-                            900: '#2b0b54',
-                            800: '#431282',
-                            700: '#5f1db5',
-                            600: '#7c3aed',
-                            500: '#9333ea',
-                            400: '#a855f7',
-                            300: '#c084fc',
-                            200: '#ddd6fe',
-                            100: '#ede9fe',
-                        },
-                        brand: {
-                            bg: '#05020a',
-                            surface: '#0d061a',
-                            border: '#2e0f59',
-                            purple: '#7c3aed',
-                        }
-                    }
-                }
-            }
-        }
+        tailwind.config = { darkMode: 'class' }
     </script>
     <!-- React 18 y ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -53,8 +21,8 @@
     <!-- Babel Standalone para transpilar JSX en el navegador -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Audio Engine para RFID -->
-    <script src="/static/rfid-audio.js?v=20261119_v16"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20261119_v16">
+    <script src="/static/rfid-audio.js?v=20261120_v19"></script>
+    <link rel="stylesheet" href="/static/styles.css?v=20261120_v19">
     <!-- Fuentes Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,30 +30,27 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background-color: #06020c;
+            background-color: #f8fafc;
+            color: #1e293b;
         }
         .font-mono {
             font-family: 'JetBrains Mono', monospace;
         }
     </style>
 </head>
-<body class="bg-[#06020c] text-slate-100 min-h-screen selection:bg-purple-600 selection:text-white relative">
-    <!-- Resplandor ambiental morado institucional -->
-    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-purple-600/15 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-    <div class="fixed bottom-0 right-0 w-[500px] h-[350px] bg-purple-900/15 rounded-full blur-[100px] pointer-events-none -z-10"></div>
-
+<body class="bg-slate-50 text-slate-800 min-h-screen selection:bg-blue-200">
     <div id="root">
         <!-- Estado inicial mientras carga React -->
         <div class="flex items-center justify-center min-h-screen">
             <div class="text-center space-y-4">
-                <img src="/static/logo_yecapixtla.png?v=20261119_v16" alt="EES Yecapixtla" class="w-20 h-20 rounded-2xl mx-auto border-2 border-purple-500/40 p-1.5 bg-white animate-pulse shadow-xl shadow-purple-600/30 object-contain">
-                <h2 class="text-xl font-bold tracking-wide text-white">EES Yecapixtla &bull; UAEM</h2>
-                <p class="text-xs text-purple-300">Cargando sistema de herramientas y módulo RFID...</p>
+                <img src="/static/logo_yecapixtla.png?v=20261120_v19" alt="EES Yecapixtla" class="w-20 h-20 rounded-lg mx-auto border border-slate-300 p-1.5 bg-white object-contain">
+                <h2 class="text-xl font-bold text-slate-900">EES Yecapixtla &bull; UAEM</h2>
+                <p class="text-xs text-slate-500">Cargando sistema de herramientas y módulo RFID...</p>
             </div>
         </div>
     </div>
 
     <!-- Script Principal de la Aplicación -->
-    <script type="text/babel" src="/static/app.js?v=20261119_v16"></script>
+    <script type="text/babel" src="/static/app.js?v=20261120_v19"></script>
 </body>
 </html>

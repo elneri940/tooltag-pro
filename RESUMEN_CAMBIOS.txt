@@ -1,0 +1,144 @@
+=====================================================================
+ TOOLTAG PRO - PRESTAMO DE HERRAMIENTAS (EES Yecapixtla - UAEM)
+ RESUMEN DE CAMBIOS: LO QUE SE IMPLEMENTO, SE QUITO Y SE BORRO
+=====================================================================
+
+OBJETIVO
+--------
+Adaptar el repositorio elneri940/tooltag-pro a un flujo simple de
+prestamo de material en un taller universitario:
+- El alumno se registra UNA sola vez. El tag RFID es solo un numero
+  (UID) que en la base de datos apunta a nombre, matricula y correo.
+- El alumno pide 1 o 2 herramientas desde la pagina.
+- El administrador acepta, entrega el material y ahi empieza a contar
+  el plazo.
+- Se premia devolver a tiempo y en buen estado; se penaliza el retraso
+  y el dano. Con pocos puntos se bloquean los prestamos.
+- Queda historial completo: quien se llevo que, cuando y como lo
+  devolvio.
+
+
+---------------------------------------------------------------------
+1. LO QUE SE IMPLEMENTO (AGREGADO / CAMBIADO)
+---------------------------------------------------------------------
+
+REGISTRO DE ALUMNOS
+- Registro simplificado: nombres, apellidos, matricula, correo y
+  numero de tag. PIN opcional.
+- Siempre se crea con rol "alumno" (nadie se registra como admin).
+- Validacion de unicidad (correo, matricula, tag) con error 409.
+- Puntos iniciales tomados de la configuracion.
+- El campo del tag ignora el lector RFID global para poder escribirlo.
+- Inicio de sesion por correo O por matricula.
+
+SOLICITUDES DE MATERIAL
+- El alumno puede elegir varias herramientas (carrito) y mandar una
+  sola solicitud.
+- El motivo es OPCIONAL (si se omite: "Sin motivo indicado").
+- Limite de herramientas a la vez (por defecto 2); cuenta prestamos
+  activos y solicitudes pendientes/aprobadas sin entregar.
+- Las solicitudes de varias herramientas se agrupan.
+
+FLUJO DEL ADMINISTRADOR
+- "Aceptar solicitud": solo autoriza (no inicia prestamo).
+- "Entregar material": crea los prestamos y AHI empieza el plazo.
+- Rechazar rechaza todo el grupo.
+- Seccion "Listas para entregar".
+
+PLAZOS
+- Dias de prestamo global (por defecto 1 dia).
+- Dias de prestamo por persona (anula el global).
+- Prioridad: horas explicitas > dias de la persona > dias globales.
+
+DEVOLUCION
+- Al devolver se indica el estado: bien / con detalles / danada, con
+  nota opcional.
+- Bien y a tiempo: +10 puntos.
+- Retraso: -15 puntos y -5 por hora.
+- Detalles: -10 puntos (sin bono). Danada: -30 y la herramienta pasa
+  a mantenimiento.
+- Se guarda condicion y notas en el prestamo y en el registro de
+  puntos.
+
+PUNTOS Y CONFIGURACION (editable en Ajustes)
+- Puntos iniciales 100, umbral minimo 20, dias por defecto,
+  maximo de herramientas, penalizaciones por dano.
+
+HISTORIAL
+- Nueva pestana "Historial" con filtros (texto, estado, condicion,
+  fechas, persona, herramienta).
+- Boton "Descargar para Excel" (CSV con acentos, encabezados en
+  espanol).
+- En inventario se ve quien tiene cada herramienta ("Con: nombre").
+
+QUIOSCO Y PORTAL
+- Carrito en el quiosco y en el portal del alumno.
+- El catalogo muestra "Plazo: N dia(s)".
+
+SERVIDOR Y ARRANQUE
+- Puerto por defecto 8090 (cambiable con la variable PORT).
+- El .bat abre http://localhost:<puerto>.
+- Contrasena del administrador por variable ADMIN_PASSWORD (o se
+  genera una al azar y se muestra una vez).
+- Base de datos SQLite, con migraciones automaticas de columnas
+  nuevas. PostgreSQL opcional con DATABASE_URL.
+- README reescrito.
+
+ESTILO VISUAL (ULTIMO CAMBIO)
+- Tema claro y sobrio: fondo gris muy claro, tarjetas blancas, texto
+  oscuro y un solo color de acento (azul).
+- Verde / rojo / ambar solo para estados.
+- Sin degradados, brillos desenfocados, sombras de color ni
+  animaciones (pulsos, rebotes, resplandores).
+- Esquinas menos redondeadas, tipografia menos pesada.
+- Colores de niveles de la tabla de posiciones ajustados.
+- index.html, styles.css, app.js y gamification.py actualizados.
+
+
+---------------------------------------------------------------------
+2. LO QUE SE QUITO (FUNCIONES ELIMINADAS)
+---------------------------------------------------------------------
+- Codigo de verificacion por correo al registrarse.
+- Registro de administradores desde la interfaz (boton y ventana).
+- Restriccion de correos solo @uaem.edu.mx.
+- Ventana "ToolRequestModal" (solicitud de una sola herramienta con
+  motivo obligatorio).
+- Tiempo de prestamo por herramienta (ya no se usa; ahora manda el
+  plazo por persona/global).
+- Limpieza automatica de la base de datos en /api/health.
+- Endpoint de reinicio de datos de ejemplo (/api/seed/reset).
+- Efectos decorativos: degradados, brillos, animaciones y colores
+  morados/cian.
+
+
+---------------------------------------------------------------------
+3. LO QUE SE BORRO (DATOS / CODIGO SENSIBLE)
+---------------------------------------------------------------------
+- Contrasena de administrador escrita en el codigo (seed.py).
+- Borrado automatico de usuarios de demostracion al iniciar.
+- Impresion de usuarios demo en la consola al arrancar.
+- Se elimino la base de datos de prueba local para que arranque
+  limpia.
+- Cuenta de prueba de alumno: borrarla antes del uso real.
+
+
+---------------------------------------------------------------------
+4. PENDIENTE / RECOMENDACIONES (NO HECHO)
+---------------------------------------------------------------------
+- Autenticacion real para el panel de administrador (hoy el control
+  de acceso es basico).
+- Respaldos de la base de datos.
+- Reservar herramientas ya aprobadas.
+- Alojamiento con PostgreSQL si se usara en linea.
+- Importar alumnos desde Excel.
+- Avisos por correo de vencimiento.
+- Limpiar codigo sin uso (columna de tiempo por herramienta,
+  handleResetSeed).
+- Los tests antiguos (test_suite.py, test_new_features.py) estan
+  desactualizados.
+
+NOTAS
+- El tag es solo un numero: la informacion personal vive en la base
+  de datos.
+- Para ver el nuevo estilo: reiniciar el servidor y recargar con
+  Ctrl+F5.

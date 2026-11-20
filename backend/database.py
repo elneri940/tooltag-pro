@@ -108,6 +108,8 @@ class PGCursorWrapper:
 
     def execute(self, query, args=None):
         adapted = adapt_query_for_pg(query)
+        if adapted.strip().rstrip(';').upper() in ("BEGIN IMMEDIATE", "BEGIN"):
+            return self
         is_insert = adapted.strip().upper().startswith("INSERT INTO") and "RETURNING" not in adapted.upper()
         
         if is_insert:
@@ -267,6 +269,14 @@ def init_db():
         );
         """)
 
+        # Migraciones: matrícula, días de préstamo por persona, estado al devolver
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS matricula TEXT;")
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS dias_prestamo INTEGER;")
+        cursor.execute("ALTER TABLE loans ADD COLUMN IF NOT EXISTS condicion TEXT;")
+        cursor.execute("ALTER TABLE loans ADD COLUMN IF NOT EXISTS notas_devolucion TEXT;")
+        cursor.execute("ALTER TABLE loan_requests ADD COLUMN IF NOT EXISTS grupo TEXT;")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_matricula ON users(matricula) WHERE matricula IS NOT NULL AND matricula != '';")
+
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_tag ON users(tag_uid);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_tools_tag ON tools(tag_uid);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_loans_active ON loans(user_id, estado);")
@@ -380,6 +390,23 @@ def init_db():
         cursor.execute("ALTER TABLE users ADD COLUMN apellido_materno TEXT;")
     if "nombres" not in columns:
         cursor.execute("ALTER TABLE users ADD COLUMN nombres TEXT;")
+    if "matricula" not in columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN matricula TEXT;")
+    if "dias_prestamo" not in columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN dias_prestamo INTEGER;")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_matricula ON users(matricula) WHERE matricula IS NOT NULL AND matricula != '';")
+
+    cursor.execute("PRAGMA table_info(loans);")
+    loan_columns = [row[1] for row in cursor.fetchall()]
+    if "condicion" not in loan_columns:
+        cursor.execute("ALTER TABLE loans ADD COLUMN condicion TEXT;")
+    if "notas_devolucion" not in loan_columns:
+        cursor.execute("ALTER TABLE loans ADD COLUMN notas_devolucion TEXT;")
+
+    cursor.execute("PRAGMA table_info(loan_requests);")
+    req_columns = [row[1] for row in cursor.fetchall()]
+    if "grupo" not in req_columns:
+        cursor.execute("ALTER TABLE loan_requests ADD COLUMN grupo TEXT;")
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_tag ON users(tag_uid);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_tools_tag ON tools(tag_uid);")

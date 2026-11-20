@@ -1,4 +1,5 @@
 import os
+import uuid
 import random
 import json
 import asyncio
@@ -18,16 +19,16 @@ from sse_starlette.sse import EventSourceResponse
 from .database import query_db, execute_db, get_connection, DB_PATH, init_db
 from .gamification import (
     get_settings, update_setting, calculate_deadline,
-    process_loan_checkout, process_loan_checkin, adjust_user_points,
+    process_loan_checkout, process_multi_checkout, process_loan_checkin, resolve_loan_hours, adjust_user_points,
     get_leaderboard, parse_iso_datetime, format_datetime,
     verify_pin, set_user_pin, update_user_profile, hash_pin
 )
-from .seed import seed_database, clean_demo_and_ensure_admin_maestro
+from .seed import ensure_defaults
 
 # Inicializar base de datos (PostgreSQL en Supabase o SQLite local) y asegurar Admin Maestro
 try:
     init_db()
-    clean_demo_and_ensure_admin_maestro()
+    ensure_defaults()
 except Exception as e:
     print(f"Error inicializando DB: {e}")
 
@@ -51,11 +52,7 @@ async def broadcast_event(event_type: str, data: dict):
 # ==========================================
 
 async def api_health(request):
-    try:
-        clean_demo_and_ensure_admin_maestro()
-    except Exception as e:
-        return JSONResponse({"status": "ok", "app": "RFID Tool Manager", "version": "1.0.0", "seed_note": str(e)})
-    return JSONResponse({"status": "ok", "app": "RFID Tool Manager", "version": "1.0.0"})
+    return JSONResponse({"status": "ok", "app": "ToolTag Pro", "version": "2.0.0"})
 
 def get_all_sync_data():
     """Recopila todo el estado del sistema en un único paso de alta velocidad."""
@@ -316,15 +313,13 @@ async def api_create_user(request):
     if not nombre or not email:
         return JSONResponse({"error": "Nombre y correo son requeridos"}, status_code=400)
 
-    # Restricción institucional UAEM
-    if not email.endswith("@uaem.edu.mx"):
-        return JSONResponse({"error": "Registro restringido: Solo se permiten correos institucionales de la UAEM (@uaem.edu.mx)"}, status_code=400)
-
     try:
         user_id, _ = execute_db("""
             INSERT INTO users (nombre, email, rol, tag_uid, puntos, estado, pin_hash)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (nombre, email, rol, tag_uid, puntos, estado, pin_h))
+        if data.get("matricula"):
+            execute_db("UPDATE users SET matricula = ? WHERE id = ?", (str(data["matricula"]).strip(), user_id))
 
         # Registrar saldo inicial en Ledger
         execute_db("""
@@ -346,15 +341,19 @@ async def api_update_user(request):
     tag_uid = data.get("tag_uid", "").strip() or None
     estado = data.get("estado", "activo")
 
-    if email != "admin@taller.io" and not email.endswith("@uaem.edu.mx"):
-        return JSONResponse({"error": "El correo debe pertenecer al dominio institucional (@uaem.edu.mx)"}, status_code=400)
-
     try:
         execute_db("""
             UPDATE users
             SET nombre = ?, email = ?, rol = ?, tag_uid = ?, estado = ?
             WHERE id = ?
         """, (nombre, email, rol, tag_uid, estado, user_id))
+
+        if "matricula" in data:
+            execute_db("UPDATE users SET matricula = ? WHERE id = ?", ((data.get("matricula") or "").strip() or None, user_id))
+        if "dias_prestamo" in data:
+            # Días de préstamo propios de esta persona; vacío = usar el general
+            dias = data.get("dias_prestamo")
+            execute_db("UPDATE users SET dias_prestamo = ? WHERE id = ?", (int(dias) if dias not in (None, "", 0, "0") else None, user_id))
 
         if "pin" in data:
             pin_val = data.get("pin", "").strip()
@@ -517,6 +516,61 @@ async def api_get_loans(request):
     loans = query_db(query, tuple(params))
     return JSONResponse(loans)
 
+def _history_rows(params):
+    """Historial de préstamos (activos y devueltos) con filtros."""
+    where, args = ["1=1"], []
+    q = (params.get("q") or "").strip().lower()
+    if q:
+        where.append("(LOWER(u.nombre) LIKE ? OR LOWER(COALESCE(u.matricula,'')) LIKE ? OR LOWER(t.nombre) LIKE ? OR LOWER(t.codigo_inventario) LIKE ?)")
+        args += [f"%{q}%"] * 4
+    estado = (params.get("estado") or "").strip()
+    if estado in ("activo", "devuelto_a_tiempo", "devuelto_tarde"):
+        where.append("l.estado = ?"); args.append(estado)
+    condicion = (params.get("condicion") or "").strip()
+    if condicion in ("bien", "con_detalles", "danada"):
+        where.append("l.condicion = ?"); args.append(condicion)
+    if params.get("desde"):
+        where.append("CAST(l.fecha_prestamo AS TEXT) >= ?"); args.append(params["desde"])
+    if params.get("hasta"):
+        where.append("CAST(l.fecha_prestamo AS TEXT) <= ?"); args.append(params["hasta"] + " 23:59:59")
+    if params.get("user_id"):
+        where.append("l.user_id = ?"); args.append(params["user_id"])
+    if params.get("tool_id"):
+        where.append("l.tool_id = ?"); args.append(params["tool_id"])
+    sql = f"""
+        SELECT l.id, u.nombre AS alumno, u.matricula, u.email, t.nombre AS herramienta, t.codigo_inventario AS codigo,
+               l.fecha_prestamo, l.fecha_limite, l.fecha_devolucion, l.estado, l.condicion, l.notas_devolucion,
+               (SELECT SUM(pt.cantidad) FROM point_transactions pt WHERE pt.loan_id = l.id) AS puntos
+        FROM loans l
+        JOIN users u ON l.user_id = u.id
+        JOIN tools t ON l.tool_id = t.id
+        WHERE {' AND '.join(where)}
+        ORDER BY l.fecha_prestamo DESC
+        LIMIT 5000
+    """
+    return query_db(sql, tuple(args))
+
+async def api_history(request):
+    return JSONResponse(_history_rows(dict(request.query_params)))
+
+async def api_history_csv(request):
+    """Descarga el historial en CSV (se abre directo en Excel)."""
+    import csv, io
+    from starlette.responses import Response
+    rows = _history_rows(dict(request.query_params))
+    estado_txt = {"activo": "En préstamo", "devuelto_a_tiempo": "Devuelto a tiempo", "devuelto_tarde": "Devuelto tarde"}
+    cond_txt = {"bien": "En buen estado", "con_detalles": "Con detalles", "danada": "Dañada"}
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Alumno", "Matrícula", "Correo", "Herramienta", "Código", "Salida", "Fecha límite", "Regreso", "Resultado", "Estado al regresar", "Puntos", "Nota"])
+    for r in rows:
+        w.writerow([r["alumno"], r["matricula"] or "", r["email"], r["herramienta"], r["codigo"], r["fecha_prestamo"], r["fecha_limite"],
+                    r["fecha_devolucion"] or "", estado_txt.get(r["estado"], r["estado"]), cond_txt.get(r["condicion"], ""),
+                    r["puntos"] if r["puntos"] is not None else "", r["notas_devolucion"] or ""])
+    nombre = "historial_prestamos_" + datetime.now().strftime("%Y%m%d_%H%M") + ".csv"
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
+
 async def api_checkout(request):
     """Procesa el check-out de una herramienta mediante ID o Tag."""
     data = await request.json()
@@ -545,6 +599,37 @@ async def api_checkout(request):
     try:
         result = process_loan_checkout(user_id, tool_id, custom_hours)
         await broadcast_event("loan_checkout", result)
+        return JSONResponse(result)
+    except ValueError as ve:
+        return JSONResponse({"error": str(ve)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": f"Error interno: {str(e)}"}, status_code=500)
+
+async def api_checkout_multi(request):
+    """Pedido de 1 o 2 herramientas a la vez (todo o nada). Acepta ids o tags."""
+    data = await request.json()
+    user_id = data.get("user_id")
+    user_tag = data.get("user_tag")
+    tool_ids = list(data.get("tool_ids") or [])
+    tool_tags = data.get("tool_tags") or []
+
+    if not user_id and user_tag:
+        u = query_db("SELECT id FROM users WHERE UPPER(tag_uid) = UPPER(?)", (user_tag.strip(),), one=True)
+        if not u:
+            return JSONResponse({"error": f"Tag de usuario no reconocido: {user_tag}"}, status_code=404)
+        user_id = u["id"]
+    for tag in tool_tags:
+        t = query_db("SELECT id FROM tools WHERE UPPER(tag_uid) = UPPER(?)", (str(tag).strip(),), one=True)
+        if not t:
+            return JSONResponse({"error": f"Tag de herramienta no reconocido: {tag}"}, status_code=404)
+        tool_ids.append(t["id"])
+
+    if not user_id:
+        return JSONResponse({"error": "Falta identificar al alumno"}, status_code=400)
+    try:
+        result = process_multi_checkout(user_id, tool_ids, data.get("custom_hours"))
+        for loan in result["loans"]:
+            await broadcast_event("loan_checkout", loan)
         return JSONResponse(result)
     except ValueError as ve:
         return JSONResponse({"error": str(ve)}, status_code=400)
@@ -589,7 +674,9 @@ async def api_checkin(request):
                 from datetime import timedelta
                 return_time = limite + timedelta(hours=float(force_simulated_late_hours))
 
-        result = process_loan_checkin(loan_id, return_time)
+        condicion = (data.get("condicion") or "bien").strip()
+        notas = (data.get("notas") or "").strip()
+        result = process_loan_checkin(loan_id, return_time, condicion, notas)
         await broadcast_event("loan_checkin", result)
         return JSONResponse(result)
     except ValueError as ve:
@@ -707,10 +794,8 @@ async def api_login(request):
         WHERE LOWER(email) = LOWER(?) 
            OR LOWER(nombre) = LOWER(?)
            OR LOWER(tag_uid) = LOWER(?)
-    """, (identifier, identifier, identifier), one=True)
-
-    if not user and "@" not in identifier:
-        user = query_db("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (f"{identifier.lower()}@uaem.edu.mx",), one=True)
+           OR LOWER(matricula) = LOWER(?)
+    """, (identifier, identifier, identifier, identifier), one=True)
 
     if not user:
         user = query_db("SELECT * FROM users WHERE LOWER(nombre) LIKE LOWER(?)", (f"%{identifier}%",), one=True)
@@ -749,207 +834,56 @@ async def api_login(request):
         "authenticated_via_password": True
     })
 
-async def api_send_verification_code(request):
-    """
-    Genera y envía un código de verificación OTP de 6 dígitos para registrar cuenta.
-    Valida:
-    1. Que el correo termine en @uaem.edu.mx.
-    2. Que el correo NO esté ya registrado en la base de datos (evita duplicados).
-    """
-    import random
-    data = await request.json()
-    email = data.get("email", "").strip().lower()
-
-    if not email:
-        return JSONResponse({"error": "Debes ingresar tu correo institucional"}, status_code=400)
-
-    # 1. Validar dominio institucional obligatorio
-    if not email.endswith("@uaem.edu.mx"):
-        return JSONResponse({
-            "error": "Acceso restringido: Solo se permite el registro con correo institucional oficial (@uaem.edu.mx)."
-        }, status_code=400)
-
-    # 2. Validar que el correo NO esté ya registrado (evita duplicados)
-    existing = query_db("SELECT id, nombre FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True)
-    if existing:
-        return JSONResponse({
-            "error": f"El correo institucional {email} ya se encuentra registrado con una cuenta activa. No es posible registrarlo dos veces."
-        }, status_code=409)
-
-    # 3. Generar código OTP de 6 dígitos
-    code = f"{random.randint(100000, 999999)}"
-    now = datetime.now()
-    expires_at = now + timedelta(minutes=15)
-    expires_str = expires_at.strftime("%Y-%m-%d %H:%M:%S")
-
-    # Invalida códigos anteriores no usados para este correo
-    execute_db("UPDATE verification_codes SET used = 1 WHERE email = ?", (email,))
-
-    # Guardar nuevo código
-    execute_db("""
-        INSERT INTO verification_codes (email, code, expires_at, used)
-        VALUES (?, ?, ?, 0)
-    """, (email, code, expires_str))
-
-    # Envío de correo SMTP si está configurado en las variables de entorno
-    smtp_sent = False
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_pass = os.environ.get("SMTP_PASS")
-    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.environ.get("SMTP_PORT", 587))
-
-    if smtp_user and smtp_pass:
-        try:
-            import smtplib
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
-
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Código de Verificación UAEM: {code}"
-            msg["From"] = f"ToolTag Pro UAEM <{smtp_user}>"
-            msg["To"] = email
-
-            html_content = f"""
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #334155; border-radius: 16px; background: #0f172a; color: #ffffff;">
-                <h2 style="color: #38bdf8; text-align: center; margin-top: 0;">ToolTag Pro - Sistema UAEM</h2>
-                <p style="font-size: 14px; color: #cbd5e1;">Has solicitado registrar tu cuenta institucional para el sistema de préstamo de herramientas con RFID.</p>
-                <div style="background: #1e293b; padding: 18px; border-radius: 12px; text-align: center; margin: 25px 0; border: 1px solid #475569;">
-                    <span style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">Tu Código de Verificación</span>
-                    <h1 style="color: #34d399; font-size: 36px; letter-spacing: 8px; margin: 12px 0; font-family: monospace;">{code}</h1>
-                    <span style="font-size: 11px; color: #64748b;">Válido durante 15 minutos</span>
-                </div>
-                <p style="font-size: 12px; color: #94a3b8; text-align: center;">Si no solicitaste este código, puedes ignorar este correo de forma segura.</p>
-            </div>
-            """
-            msg.attach(MIMEText(html_content, "html"))
-
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.send_message(msg)
-            smtp_sent = True
-        except Exception as e:
-            print(f"Error enviando correo SMTP: {e}")
-            smtp_sent = False
-
-    return JSONResponse({
-        "success": True,
-        "message": f"Código de verificación generado para {email}",
-        "smtp_sent": smtp_sent,
-        "code_preview": code if not smtp_sent else None
-    })
-
 async def api_register(request):
     """
-    Registro de nuevas cuentas de Usuario u Operario, y Administrador.
-    Requiere: nombres, apellido_paterno, apellido_materno, email, password, verification_code, rol.
-    Si rol == 'admin', requiere obligatoriamente master_admin_password
-    (la contraseña del primer administrador registrado).
+    Registro de un alumno. Datos: nombres, apellidos, matrícula, correo y el número del tag
+    (el tag solo guarda un número; el resto de los datos vive en la base de datos).
+    Siempre crea un usuario normal: los administradores no se crean desde aquí.
     """
-    import random
     data = await request.json()
-    nombres = data.get("nombres", "").strip()
-    apellido_paterno = data.get("apellido_paterno", "").strip()
-    apellido_materno = data.get("apellido_materno", "").strip()
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "").strip()
-    verification_code = data.get("verification_code", "").strip()
-    rol = data.get("rol", "user").strip().lower()
+    nombres = (data.get("nombres") or "").strip()
+    apellido_paterno = (data.get("apellido_paterno") or "").strip()
+    apellido_materno = (data.get("apellido_materno") or "").strip()
+    matricula = (data.get("matricula") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    tag_uid = (data.get("tag_uid") or "").strip()
+    pin = (data.get("password") or data.get("pin") or "").strip()
 
-    if not nombres or not apellido_paterno or not email or not password:
-        return JSONResponse({"error": "Nombres, Apellido Paterno, Correo y Contraseña son obligatorios"}, status_code=400)
+    if not nombres or not apellido_paterno or not matricula or not email or not tag_uid:
+        return JSONResponse({"error": "Nombre, apellido paterno, matrícula, correo y tag son obligatorios"}, status_code=400)
+    if "@" not in email:
+        return JSONResponse({"error": "El correo no es válido"}, status_code=400)
+    if pin and len(pin) < 4:
+        return JSONResponse({"error": "El PIN debe tener al menos 4 dígitos"}, status_code=400)
 
-    # Restricción obligatoria de dominio institucional
-    if not email.endswith("@uaem.edu.mx"):
-        return JSONResponse({
-            "error": "Acceso restringido: Solo se permite el registro con correo institucional oficial (@uaem.edu.mx)."
-        }, status_code=400)
-
-    # 1. Validar que el correo NO esté ya registrado (evita cuentas duplicadas)
-    existing = query_db("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True)
-    if existing:
-        return JSONResponse({
-            "error": f"El correo institucional {email} ya se encuentra registrado con una cuenta activa. No es posible registrarlo dos veces."
-        }, status_code=409)
-
-    # 2. Validar Código de Verificación OTP
-    if not verification_code:
-        return JSONResponse({"error": "Debes solicitar e ingresar el código de verificación de 6 dígitos"}, status_code=400)
-
-    v_row = query_db("""
-        SELECT id, code, expires_at 
-        FROM verification_codes 
-        WHERE LOWER(email) = LOWER(?) AND code = ? AND used = 0
-        ORDER BY id DESC LIMIT 1
-    """, (email, verification_code), one=True)
-
-    if not v_row:
-        return JSONResponse({"error": "Código de verificación incorrecto, ya usado o no solicitado."}, status_code=400)
-
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    if str(v_row["expires_at"]) < now_str:
-        return JSONResponse({"error": "El código de verificación ha expirado (validez: 15 minutos). Solicita uno nuevo."}, status_code=400)
-
-    # Marcar código como consumido
-    execute_db("UPDATE verification_codes SET used = 1 WHERE id = ?", (v_row["id"],))
-
-    if len(password) < 4:
-        return JSONResponse({"error": "La contraseña debe tener al menos 4 caracteres o dígitos"}, status_code=400)
-
-    if rol not in ("admin", "user"):
-        rol = "user"
-
-    # Si es Administrador: verificar autorización del primer admin
-    if rol == "admin":
-        master_password = data.get("master_admin_password", "").strip()
-        if not master_password:
-            return JSONResponse({"error": "Para crear una cuenta de Administrador debes ingresar la contraseña del primer Administrador para autorizar el registro."}, status_code=403)
-        
-        first_admin = query_db("SELECT id, nombre, pin_hash FROM users WHERE rol = 'admin' ORDER BY id ASC LIMIT 1", one=True)
-        if not first_admin:
-            return JSONResponse({"error": "No hay ningún administrador maestro registrado en el sistema."}, status_code=500)
-
-        if not verify_pin(first_admin["id"], master_password):
-            return JSONResponse({"error": "Contraseña de autorización del primer Administrador incorrecta. Registro de admin denegado."}, status_code=403)
+    if query_db("SELECT id FROM users WHERE LOWER(matricula) = LOWER(?)", (matricula,), one=True):
+        return JSONResponse({"error": f"La matrícula {matricula} ya está registrada"}, status_code=409)
+    if query_db("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True):
+        return JSONResponse({"error": f"El correo {email} ya está registrado"}, status_code=409)
+    if query_db("SELECT id FROM users WHERE UPPER(tag_uid) = UPPER(?)", (tag_uid,), one=True) or \
+       query_db("SELECT id FROM tools WHERE UPPER(tag_uid) = UPPER(?)", (tag_uid,), one=True):
+        return JSONResponse({"error": "Ese tag ya está asignado a otra persona o herramienta"}, status_code=409)
 
     nombre_completo = f"{nombres} {apellido_paterno} {apellido_materno}".strip()
-    initial_puntos = 250 if rol == "admin" else 100
-    
-    # Generar Tag UID único aleatorio
-    prefix = "AD" if rol == "admin" else "USR"
-    tag_uid = f"{prefix}-{random.randint(1000, 9999)}-{chr(random.randint(65, 90))}"
+    initial_puntos = int(get_settings().get("initial_points", 100))
 
     try:
         user_id, _ = execute_db("""
-            INSERT INTO users (nombre, nombres, apellido_paterno, apellido_materno, email, rol, tag_uid, puntos, estado, pin_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)
-        """, (nombre_completo, nombres, apellido_paterno, apellido_materno, email, rol, tag_uid, initial_puntos, hash_pin(password)))
+            INSERT INTO users (nombre, nombres, apellido_paterno, apellido_materno, matricula, email, rol, tag_uid, puntos, estado, pin_hash)
+            VALUES (?, ?, ?, ?, ?, ?, 'user', ?, ?, 'activo', ?)
+        """, (nombre_completo, nombres, apellido_paterno, apellido_materno, matricula, email, tag_uid, initial_puntos, hash_pin(pin) if pin else None))
 
-        # Registrar saldo inicial en Ledger
         execute_db("""
             INSERT INTO point_transactions (user_id, cantidad, motivo, saldo_resultante)
-            VALUES (?, ?, 'Saldo inicial asignado en registro de cuenta', ?)
+            VALUES (?, ?, 'Saldo inicial asignado en registro', ?)
         """, (user_id, initial_puntos, initial_puntos))
 
-        await broadcast_event("user_created", {"id": user_id, "nombre": nombre_completo, "rol": rol})
-
-        user_safe = {
-            "id": user_id,
-            "nombre": nombre_completo,
-            "nombres": nombres,
-            "apellido_paterno": apellido_paterno,
-            "apellido_materno": apellido_materno,
-            "email": email,
-            "rol": rol,
-            "tag_uid": tag_uid,
-            "puntos": initial_puntos,
-            "estado": "activo"
-        }
-
+        await broadcast_event("user_created", {"id": user_id, "nombre": nombre_completo, "rol": "user"})
         return JSONResponse({
             "success": True,
-            "user": user_safe,
-            "message": f"Cuenta de {rol.capitalize()} creada y verificada exitosamente."
+            "user": {"id": user_id, "nombre": nombre_completo, "matricula": matricula, "email": email,
+                     "rol": "user", "tag_uid": tag_uid, "puntos": initial_puntos, "estado": "activo"},
+            "message": "Alumno registrado correctamente."
         })
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
@@ -981,18 +915,25 @@ async def api_get_requests(request):
     return JSONResponse(requests_list)
 
 async def api_create_request(request):
+    """
+    Solicitud de préstamo de una o varias herramientas en un solo envío.
+    El motivo es opcional. El plazo lo fija el sistema (días generales o los de la persona).
+    """
     data = await request.json()
     user_id = data.get("user_id")
-    tool_id = data.get("tool_id")
-    tiempo_horas = int(data.get("tiempo_horas", 8))
-    motivo = data.get("motivo", "").strip() or "Préstamo operativo de rutina"
+    tool_ids = list(data.get("tool_ids") or [])
+    if data.get("tool_id") and data.get("tool_id") not in tool_ids:
+        tool_ids.append(data.get("tool_id"))
+    tool_ids = list(dict.fromkeys(tool_ids))  # sin repetidos, conservando el orden
+    motivo = (data.get("motivo") or "").strip() or "Sin motivo indicado"
 
-    if not user_id or not tool_id:
-        return JSONResponse({"error": "Usuario y herramienta son requeridos"}, status_code=400)
+    if not user_id or not tool_ids:
+        return JSONResponse({"error": "Elige al menos una herramienta"}, status_code=400)
 
     settings = get_settings()
     min_threshold = int(settings.get("min_points_threshold", 20))
-    user = query_db("SELECT id, nombre, puntos, estado FROM users WHERE id = ?", (user_id,), one=True)
+    max_tools = int(settings.get("max_tools_per_request", 2))
+    user = query_db("SELECT id, nombre, puntos, estado, dias_prestamo FROM users WHERE id = ?", (user_id,), one=True)
     if not user:
         return JSONResponse({"error": "Usuario no encontrado"}, status_code=404)
     if user["estado"] == "bloqueado":
@@ -1000,25 +941,50 @@ async def api_create_request(request):
     if user["puntos"] < min_threshold:
         return JSONResponse({"error": f"Puntos insuficientes ({user['puntos']} pts). El umbral mínimo requerido es de {min_threshold} puntos."}, status_code=403)
 
-    tool = query_db("SELECT id, nombre, estado, tiempo_prestamo_horas FROM tools WHERE id = ?", (tool_id,), one=True)
-    if not tool:
-        return JSONResponse({"error": "Herramienta no encontrada"}, status_code=404)
-    if tool["estado"] != "disponible":
-        return JSONResponse({"error": f"La herramienta '{tool['nombre']}' no está disponible (Estado: {tool['estado']})"}, status_code=400)
+    # El límite cuenta lo que ya tiene prestado y lo que ya tiene pedido sin resolver
+    activos = query_db("SELECT COUNT(*) AS n FROM loans WHERE user_id = ? AND estado = 'activo'", (user_id,), one=True)["n"]
+    pendientes = query_db("SELECT COUNT(*) AS n FROM loan_requests WHERE user_id = ? AND (estado = 'pendiente' OR (estado = 'aprobada' AND loan_id IS NULL))", (user_id,), one=True)["n"]
+    if activos + pendientes + len(tool_ids) > max_tools:
+        return JSONResponse({"error": f"El máximo es {max_tools} herramientas a la vez. Tienes {activos} prestada(s) y {pendientes} solicitada(s) sin recoger."}, status_code=400)
 
-    existing = query_db("SELECT id FROM loan_requests WHERE user_id = ? AND tool_id = ? AND estado = 'pendiente'", (user_id, tool_id), one=True)
-    if existing:
-        return JSONResponse({"error": "Ya tienes una solicitud pendiente para esta herramienta. Espera la aprobación del administrador."}, status_code=400)
+    nombres = []
+    for tid in tool_ids:
+        tool = query_db("SELECT id, nombre, estado FROM tools WHERE id = ?", (tid,), one=True)
+        if not tool:
+            return JSONResponse({"error": "Herramienta no encontrada"}, status_code=404)
+        if tool["estado"] != "disponible":
+            return JSONResponse({"error": f"La herramienta '{tool['nombre']}' no está disponible (Estado: {tool['estado']})"}, status_code=400)
+        if query_db("SELECT id FROM loan_requests WHERE user_id = ? AND tool_id = ? AND (estado = 'pendiente' OR (estado = 'aprobada' AND loan_id IS NULL))", (user_id, tid), one=True):
+            return JSONResponse({"error": f"Ya tienes una solicitud en curso para '{tool['nombre']}'."}, status_code=400)
+        nombres.append(tool["nombre"])
 
-    req_id, _ = execute_db("""
-        INSERT INTO loan_requests (user_id, tool_id, tiempo_horas, motivo, estado)
-        VALUES (?, ?, ?, ?, 'pendiente')
-    """, (user_id, tool_id, tiempo_horas, motivo))
+    horas = resolve_loan_hours(user, settings)
+    grupo = uuid.uuid4().hex[:12] if len(tool_ids) > 1 else None
+    req_ids = []
+    for tid in tool_ids:
+        req_id, _ = execute_db("""
+            INSERT INTO loan_requests (user_id, tool_id, tiempo_horas, motivo, estado, grupo)
+            VALUES (?, ?, ?, ?, 'pendiente', ?)
+        """, (user_id, tid, horas, motivo, grupo))
+        req_ids.append(req_id)
 
-    await broadcast_event("request_created", {"id": req_id, "user": user["nombre"], "tool": tool["nombre"]})
-    return JSONResponse({"success": True, "id": req_id, "message": "Solicitud enviada al Administrador con éxito."})
+    await broadcast_event("request_created", {"ids": req_ids, "user": user["nombre"], "tools": nombres})
+    return JSONResponse({"success": True, "ids": req_ids, "message": "Solicitud enviada al Administrador con éxito."})
+
+def _pending_in_same_request(req):
+    """La solicitud pendiente y las que se mandaron junto con ella (mismo grupo)."""
+    if req.get("grupo"):
+        return query_db("SELECT * FROM loan_requests WHERE grupo = ? AND estado = 'pendiente' ORDER BY id", (req["grupo"],))
+    return [req]
+
+def _approved_not_delivered(req):
+    """Solicitudes aprobadas que aún no se entregan, del mismo pedido."""
+    if req.get("grupo"):
+        return query_db("SELECT * FROM loan_requests WHERE grupo = ? AND estado = 'aprobada' AND loan_id IS NULL ORDER BY id", (req["grupo"],))
+    return [req] if (req["estado"] == "aprobada" and not req.get("loan_id")) else []
 
 async def api_approve_request(request):
+    """Autoriza el pedido. El plazo NO empieza aquí: empieza cuando se entrega el material."""
     req_id = request.path_params["id"]
     req = query_db("SELECT * FROM loan_requests WHERE id = ?", (req_id,), one=True)
     if not req:
@@ -1026,18 +992,36 @@ async def api_approve_request(request):
     if req["estado"] != "pendiente":
         return JSONResponse({"error": f"Esta solicitud ya fue resuelta previamente ({req['estado']})"}, status_code=400)
 
+    group = _pending_in_same_request(req)
+    for r in group:
+        tool = query_db("SELECT nombre, estado FROM tools WHERE id = ?", (r["tool_id"],), one=True)
+        if not tool or tool["estado"] != "disponible":
+            nombre = tool["nombre"] if tool else "una herramienta"
+            return JSONResponse({"error": f"'{nombre}' ya no está disponible; no se puede aprobar este pedido."}, status_code=400)
+
+    ahora_str = format_datetime(datetime.now())
+    for r in group:
+        execute_db("UPDATE loan_requests SET estado = 'aprobada', fecha_resolucion = ? WHERE id = ?", (ahora_str, r["id"]))
+
+    await broadcast_event("request_approved", {"ids": [r["id"] for r in group]})
+    return JSONResponse({"success": True, "message": "Solicitud aprobada. Entrega el material para que empiece el plazo."})
+
+async def api_deliver_request(request):
+    """Entrega física del material: aquí queda registrado el préstamo y empieza a contar el plazo."""
+    req_id = request.path_params["id"]
+    req = query_db("SELECT * FROM loan_requests WHERE id = ?", (req_id,), one=True)
+    if not req:
+        return JSONResponse({"error": "Solicitud no encontrada"}, status_code=404)
+    group = _approved_not_delivered(req)
+    if not group:
+        return JSONResponse({"error": "Esta solicitud no está pendiente de entrega"}, status_code=400)
     try:
-        checkout_res = process_loan_checkout(req["user_id"], req["tool_id"], custom_hours=req["tiempo_horas"])
-        ahora_str = format_datetime(datetime.now())
-
-        execute_db("""
-            UPDATE loan_requests
-            SET estado = 'aprobada', loan_id = ?, fecha_resolucion = ?
-            WHERE id = ?
-        """, (checkout_res["loan_id"], ahora_str, req_id))
-
-        await broadcast_event("request_approved", {"id": req_id, "loan_id": checkout_res["loan_id"]})
-        return JSONResponse({"success": True, "checkout": checkout_res, "message": "Solicitud aprobada y préstamo registrado."})
+        result = process_multi_checkout(req["user_id"], [r["tool_id"] for r in group])
+        for r, loan in zip(group, result["loans"]):
+            execute_db("UPDATE loan_requests SET loan_id = ? WHERE id = ?", (loan["loan_id"], r["id"]))
+        for loan in result["loans"]:
+            await broadcast_event("loan_checkout", loan)
+        return JSONResponse({"success": True, "checkout": result, "message": "Material entregado. El plazo empezó a contar."})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
@@ -1053,13 +1037,15 @@ async def api_reject_request(request):
         return JSONResponse({"error": f"Esta solicitud ya fue resuelta previamente ({req['estado']})"}, status_code=400)
 
     ahora_str = format_datetime(datetime.now())
-    execute_db("""
-        UPDATE loan_requests
-        SET estado = 'rechazada', respuesta_admin = ?, fecha_resolucion = ?
-        WHERE id = ?
-    """, (motivo_rechazo, ahora_str, req_id))
+    group = _pending_in_same_request(req)
+    for r in group:
+        execute_db("""
+            UPDATE loan_requests
+            SET estado = 'rechazada', respuesta_admin = ?, fecha_resolucion = ?
+            WHERE id = ?
+        """, (motivo_rechazo, ahora_str, r["id"]))
 
-    await broadcast_event("request_rejected", {"id": req_id, "motivo": motivo_rechazo})
+    await broadcast_event("request_rejected", {"ids": [r["id"] for r in group], "motivo": motivo_rechazo})
     return JSONResponse({"success": True, "message": "Solicitud rechazada."})
 
 async def api_get_leaderboard(request):
@@ -1093,12 +1079,6 @@ async def api_update_settings(request):
         update_setting(k, v)
     await broadcast_event("settings_updated", data)
     return JSONResponse({"success": True, "settings": get_settings()})
-
-async def api_reset_seed(request):
-    """Permite reiniciar los datos de prueba a su estado original."""
-    seed_database(force=True)
-    await broadcast_event("database_reset", {})
-    return JSONResponse({"success": True, "message": "Datos de prueba reiniciados correctamente"})
 
 # --- RFID SCANNER INTELISENSE ---
 async def api_rfid_scan(request):
@@ -1198,8 +1178,8 @@ class CachedStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):
         response = await super().get_response(path, scope)
         if response.status_code == 200:
-            # Cachear recursos estaticos en el navegador por 7 dias para carga instantanea en moviles
-            response.headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
+            # Revalidar siempre para que los cambios se vean al recargar
+            response.headers["Cache-Control"] = "no-cache"
         return response
 
 async def serve_index(request):
@@ -1234,24 +1214,26 @@ routes = [
     Route("/api/tools/{id:int}", api_delete_tool, methods=["DELETE"]),
     Route("/api/tools/by-tag/{tag_uid:str}", api_get_tool_by_tag, methods=["GET"]),
     Route("/api/loans", api_get_loans, methods=["GET"]),
+    Route("/api/history", api_history, methods=["GET"]),
+    Route("/api/history.csv", api_history_csv, methods=["GET"]),
     Route("/api/loans/checkout", api_checkout, methods=["POST"]),
+    Route("/api/loans/checkout-multi", api_checkout_multi, methods=["POST"]),
     Route("/api/loans/checkin", api_checkin, methods=["POST"]),
     Route("/api/points/adjust", api_adjust_points, methods=["POST"]),
     Route("/api/users/{id:int}/profile", api_update_profile, methods=["PUT"]),
     Route("/api/users/{id:int}/pin", api_set_pin, methods=["PUT"]),
     Route("/api/verify-pin", api_verify_pin, methods=["POST"]),
     Route("/api/auth/login", api_login, methods=["POST"]),
-    Route("/api/auth/send-verification-code", api_send_verification_code, methods=["POST"]),
     Route("/api/auth/register", api_register, methods=["POST"]),
     Route("/api/requests", api_get_requests, methods=["GET"]),
     Route("/api/requests", api_create_request, methods=["POST"]),
     Route("/api/requests/{id:int}/approve", api_approve_request, methods=["POST"]),
+    Route("/api/requests/{id:int}/deliver", api_deliver_request, methods=["POST"]),
     Route("/api/requests/{id:int}/reject", api_reject_request, methods=["POST"]),
     Route("/api/leaderboard", api_get_leaderboard, methods=["GET"]),
     Route("/api/transactions", api_get_transactions, methods=["GET"]),
     Route("/api/settings", api_get_settings, methods=["GET"]),
     Route("/api/settings", api_update_settings, methods=["PUT"]),
-    Route("/api/seed/reset", api_reset_seed, methods=["POST"]),
     Route("/api/rfid/scan", api_rfid_scan, methods=["POST"]),
     Route("/api/events", api_sse, methods=["GET"]),
     Mount("/static", CachedStaticFiles(directory=str(FRONTEND_DIR)), name="static"),
