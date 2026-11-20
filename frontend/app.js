@@ -1311,9 +1311,9 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
             <div className="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-slate-200">
                 <div className="flex items-center gap-3">
                     <img 
-                        src="/static/logo_yecapixtla.png?v=20261120_v19" 
+                        src="/static/logo_yecapixtla.png?v=20261120_v20" 
                         alt="Logo EES Yecapixtla UAEM" 
-                        className="w-12 h-12 rounded-lg object-contain bg-white p-1 border-2 border-slate-300 shadow-sm"
+                        className="w-12 h-12 object-contain"
                     />
                     <div>
                         <div className="flex items-center gap-2">
@@ -1345,15 +1345,13 @@ function RoleLandingView({ onOpenLogin, onOpenRegister, onQuickLogin, onOpenKios
 
             {/* Contenido Central: ¿Eres Administrador o Usuario? */}
             <div className="max-w-4xl w-full mx-auto py-8 sm:py-12 space-y-8 text-center">
-                {/* Gran Escudo de Venado Yecapixtla */}
+                {/* Gran Escudo de Venado Yecapixtla libre sin cuadro */}
                 <div className="flex justify-center mb-2">
-                    <div className="relative group">
-                        <img 
-                            src="/static/logo_yecapixtla.png?v=20261120_v19" 
-                            alt="Logo Escuela de Estudios Superiores de Yecapixtla" 
-                            className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl object-contain bg-white p-2 border-2 border-slate-300 shadow-lg transition-transform group-hover:scale-105"
-                        />
-                        </div>
+                    <img 
+                        src="/static/logo_yecapixtla.png?v=20261120_v20" 
+                        alt="Logo Escuela de Estudios Superiores de Yecapixtla" 
+                        className="w-36 h-36 sm:w-48 sm:h-48 object-contain transition-transform duration-300 hover:scale-105"
+                    />
                 </div>
 
                 <div className="space-y-3">
