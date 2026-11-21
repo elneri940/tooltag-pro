@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Préstamo de Herramientas - EES Yecapixtla UAEM</title>
-    <link rel="icon" type="image/png" href="/static/logo_yecapixtla.png?v=20261121_v22">
+    <link rel="icon" type="image/png" href="/static/logo_yecapixtla.png?v=20261121_v23">
     <!-- Aceleración de conexión CDN para móviles -->
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
@@ -15,15 +15,13 @@
     <script>
         tailwind.config = { darkMode: 'class' }
     </script>
-    <!-- React 18 y ReactDOM -->
+    <!-- React 18 y ReactDOM (Versión de producción minificada) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel Standalone para transpilar JSX en el navegador -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Audio Engine para RFID -->
-    <script src="/static/rfid-audio.js?v=20261121_v22"></script>
-    <link rel="stylesheet" href="/static/styles.css?v=20261121_v22">
-    <!-- Fuentes Google Fonts -->
+    <script src="/static/rfid-audio.js?v=20261121_v23"></script>
+    <link rel="stylesheet" href="/static/styles.css?v=20261121_v23">
+    <!-- Fuentes Google Fonts con display=swap para renderizado inmediato -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -43,14 +41,14 @@
         <!-- Estado inicial mientras carga React -->
         <div class="flex items-center justify-center min-h-screen">
             <div class="text-center space-y-4">
-                <img src="/static/logo_yecapixtla.png?v=20261121_v22" alt="EES Yecapixtla" class="w-24 h-24 mx-auto object-contain">
+                <img src="/static/logo_yecapixtla.png?v=20261121_v23" alt="EES Yecapixtla" class="w-24 h-24 mx-auto object-contain">
                 <h2 class="text-xl font-bold text-slate-900">EES Yecapixtla &bull; UAEM</h2>
                 <p class="text-xs text-slate-500">Cargando sistema de herramientas y módulo RFID...</p>
             </div>
         </div>
     </div>
 
-    <!-- Script Principal de la Aplicación -->
-    <script type="text/babel" src="/static/app.js?v=20261121_v22"></script>
+    <!-- Script Principal de la Aplicación (Precompilado a JS nativo - Carga móvil ultra rápida) -->
+    <script defer src="/static/app.compiled.js?v=20261121_v23"></script>
 </body>
 </html>
