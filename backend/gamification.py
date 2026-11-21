@@ -17,11 +17,47 @@ DEFAULT_SETTINGS = {
     "max_tools_per_request": "2",
     # Puntos que se restan según el estado en que regresa la herramienta
     "damage_penalty_minor": "10",
-    "damage_penalty_major": "30"
+    "damage_penalty_major": "30",
+    # Horario de atención del taller (EES Yecapixtla UAEM)
+    "workshop_open_time": "07:30",
+    "workshop_close_time": "17:00",
+    "cap_loan_at_closing": "true"
 }
 
 # Estados válidos al devolver una herramienta
 CONDICIONES = ("bien", "con_detalles", "danada")
+
+def get_user_rank(puntos: int) -> dict:
+    """Calcula el rango de reputación universitaria según los puntos del alumno."""
+    try:
+        pts = int(puntos if puntos is not None else 100)
+    except (ValueError, TypeError):
+        pts = 100
+
+    if pts < 100:
+        return {
+            "nivel": 1,
+            "titulo": "Alumno Inicial",
+            "badge": "🥉",
+            "max_herramientas": 1,
+            "descripcion": "Límite: 1 herramienta a la vez"
+        }
+    elif pts < 150:
+        return {
+            "nivel": 2,
+            "titulo": "Técnico Confiable",
+            "badge": "🥈",
+            "max_herramientas": 2,
+            "descripcion": "Límite: 2 herramientas a la vez"
+        }
+    else:
+        return {
+            "nivel": 3,
+            "titulo": "Maestro de Taller",
+            "badge": "🥇",
+            "max_herramientas": 3,
+            "descripcion": "Límite: 3 herramientas a la vez • Máxima confianza"
+        }
 
 def hash_pin(pin):
     """Genera hash SHA-256 de un PIN."""
@@ -118,11 +154,49 @@ def format_datetime(dt):
     """Formatea datetime a cadena ISO limpia."""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
-def calculate_deadline(tiempo_horas, start_dt=None):
-    """Calcula la fecha límite de devolución a partir de ahora o fecha dada."""
+def calculate_deadline(tiempo_horas, start_dt=None, settings=None):
+    """
+    Calcula la fecha límite de devolución considerando el horario de atención del taller (7:30 AM a 5:00 PM).
+    Si un préstamo terminaría fuera del horario de ventanilla o en fin de semana,
+    se ajusta al horario de atención para proteger al alumno de penalizaciones injustas.
+    """
     if start_dt is None:
         start_dt = datetime.now()
+    if settings is None:
+        try:
+            settings = get_settings()
+        except Exception:
+            settings = DEFAULT_SETTINGS
+
+    open_str = settings.get("workshop_open_time", "07:30")
+    close_str = settings.get("workshop_close_time", "17:00")
+    try:
+        open_h, open_m = [int(x) for x in open_str.split(":")]
+        close_h, close_m = [int(x) for x in close_str.split(":")]
+    except Exception:
+        open_h, open_m = 7, 30
+        close_h, close_m = 17, 0
+
     deadline = start_dt + timedelta(hours=int(tiempo_horas))
+
+    # Ajuste de horario de cierre del taller (ej. 17:00)
+    close_time = deadline.replace(hour=close_h, minute=close_m, second=0, microsecond=0)
+    open_time = deadline.replace(hour=open_h, minute=open_m, second=0, microsecond=0)
+
+    # Si la fecha límite calculada excede la hora de cierre del taller del mismo día:
+    if deadline > close_time:
+        deadline = close_time
+
+    # Si cae antes de la apertura del taller:
+    if deadline < open_time:
+        deadline = open_time
+
+    # Si cae en fin de semana (sábado = 5, domingo = 6), trasladar al lunes a primera hora
+    if deadline.weekday() == 5:  # Sábado -> Lunes
+        deadline = (deadline + timedelta(days=2)).replace(hour=close_h, minute=close_m)
+    elif deadline.weekday() == 6:  # Domingo -> Lunes
+        deadline = (deadline + timedelta(days=1)).replace(hour=close_h, minute=close_m)
+
     return format_datetime(deadline)
 
 def _checkout_one(cur, user_dict, tool_id, tiempo_horas):
@@ -138,7 +212,7 @@ def _checkout_one(cur, user_dict, tool_id, tiempo_horas):
 
     ahora = datetime.now()
     ahora_str = format_datetime(ahora)
-    limite_str = format_datetime(ahora + timedelta(hours=int(tiempo_horas)))
+    limite_str = calculate_deadline(tiempo_horas, start_dt=ahora)
 
     cur.execute("""
         INSERT INTO loans (user_id, tool_id, fecha_prestamo, fecha_limite, estado)

@@ -19,7 +19,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from .database import query_db, execute_db, get_connection, DB_PATH, init_db
 from .gamification import (
-    get_settings, update_setting, calculate_deadline,
+    get_settings, update_setting, calculate_deadline, get_user_rank,
     process_loan_checkout, process_multi_checkout, process_loan_checkin, resolve_loan_hours, adjust_user_points,
     get_leaderboard, parse_iso_datetime, format_datetime,
     verify_pin, set_user_pin, update_user_profile, hash_pin
@@ -73,6 +73,7 @@ def get_all_sync_data():
     """)
     for u in users:
         u.pop("pin_hash", None)
+        u["rank"] = get_user_rank(u.get("puntos", 100))
 
     # 2. Herramientas con préstamo actual si existe
     tools = query_db("""
@@ -906,7 +907,7 @@ async def api_login(request):
     min_threshold = int(settings.get("min_points_threshold", 20))
     bloqueado = user["puntos"] < min_threshold or user["estado"] == "bloqueado"
     user_safe = {k: v for k, v in user.items() if k != "pin_hash"}
-
+    user_safe["rank"] = get_user_rank(user.get("puntos", 100))
     return JSONResponse({
         "success": True,
         "token": token,
@@ -1033,11 +1034,14 @@ async def api_create_request(request):
     if user["puntos"] < min_threshold:
         return JSONResponse({"error": f"Puntos insuficientes ({user['puntos']} pts). El umbral mínimo requerido es de {min_threshold} puntos."}, status_code=403)
 
-    # El límite cuenta lo que ya tiene prestado y lo que ya tiene pedido sin resolver
+    # El límite de herramientas depende del rango universitario (puntos) del alumno
+    user_rank = get_user_rank(user.get("puntos", 100))
+    max_tools = user_rank["max_herramientas"]
+
     activos = query_db("SELECT COUNT(*) AS n FROM loans WHERE user_id = ? AND estado = 'activo'", (user_id,), one=True)["n"]
     pendientes = query_db("SELECT COUNT(*) AS n FROM loan_requests WHERE user_id = ? AND (estado = 'pendiente' OR (estado = 'aprobada' AND loan_id IS NULL))", (user_id,), one=True)["n"]
     if activos + pendientes + len(tool_ids) > max_tools:
-        return JSONResponse({"error": f"El máximo es {max_tools} herramientas a la vez. Tienes {activos} prestada(s) y {pendientes} solicitada(s) sin recoger."}, status_code=400)
+        return JSONResponse({"error": f"Tu nivel ({user_rank['badge']} {user_rank['titulo']}) te permite tener hasta {max_tools} herramienta(s) simultáneas. Tienes {activos} en préstamo y {pendientes} solicitada(s)."}, status_code=400)
 
     nombres = []
     for tid in tool_ids:
@@ -1310,6 +1314,7 @@ async def api_auth_me(request):
     if not user:
         return JSONResponse({"authenticated": False, "user": None}, status_code=401)
     user_safe = {k: v for k, v in user.items() if k != "pin_hash"}
+    user_safe["rank"] = get_user_rank(user.get("puntos", 100))
     return JSONResponse({"authenticated": True, "user": user_safe})
 
 
