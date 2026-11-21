@@ -11,6 +11,7 @@ from starlette.responses import JSONResponse, HTMLResponse, FileResponse
 from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.concurrency import run_in_threadpool
@@ -450,10 +451,15 @@ async def api_create_tool(request):
     codigo = data.get("codigo_inventario", "").strip()
     tag_uid = data.get("tag_uid", "").strip() or None
     categoria = data.get("categoria", "General")
-    tiempo_horas = int(data.get("tiempo_prestamo_horas", 8))
-    ubicacion = data.get("ubicacion", "Taller Central")
-    img = data.get("imagen_url", "").strip() or None
-    desc = data.get("descripcion", "").strip() or None
+    try:
+        tiempo_horas = max(1, min(720, int(data.get("tiempo_prestamo_horas", 8))))
+    except (ValueError, TypeError):
+        tiempo_horas = 8
+    ubicacion = (data.get("ubicacion", "Taller Central") or "Taller Central").strip()[:100]
+    img = (data.get("imagen_url", "") or "").strip() or None
+    if img and not (img.startswith("http://") or img.startswith("https://") or img.startswith("/")):
+        img = None
+    desc = (data.get("descripcion", "") or "").strip()[:500] or None
 
     if not nombre or not codigo:
         return JSONResponse({"error": "Nombre y Código de Inventario son obligatorios"}, status_code=400)
@@ -480,10 +486,15 @@ async def api_update_tool(request):
     tag_uid = data.get("tag_uid", "").strip() or None
     categoria = data.get("categoria", "General")
     estado = data.get("estado", "disponible")
-    tiempo_horas = int(data.get("tiempo_prestamo_horas", 8))
-    ubicacion = data.get("ubicacion", "Taller Central")
-    img = data.get("imagen_url", "").strip() or None
-    desc = data.get("descripcion", "").strip() or None
+    try:
+        tiempo_horas = max(1, min(720, int(data.get("tiempo_prestamo_horas", 8))))
+    except (ValueError, TypeError):
+        tiempo_horas = 8
+    ubicacion = (data.get("ubicacion", "Taller Central") or "Taller Central").strip()[:100]
+    img = (data.get("imagen_url", "") or "").strip() or None
+    if img and not (img.startswith("http://") or img.startswith("https://") or img.startswith("/")):
+        img = None
+    desc = (data.get("descripcion", "") or "").strip()[:500] or None
 
     try:
         execute_db("""
@@ -729,8 +740,11 @@ async def api_adjust_points(request):
         return err
     data = await request.json()
     user_id = data.get("user_id")
-    delta = int(data.get("delta", 0))
-    motivo = data.get("motivo", "").strip()
+    try:
+        delta = max(-1000, min(1000, int(data.get("delta", 0))))
+    except (ValueError, TypeError):
+        delta = 0
+    motivo = (data.get("motivo", "") or "").strip()[:200]
 
     if not user_id or delta == 0 or not motivo:
         return JSONResponse({"error": "user_id, delta (distinto de 0) y motivo son obligatorios"}, status_code=400)
@@ -910,11 +924,11 @@ async def api_register(request):
     Siempre crea un usuario normal: los administradores no se crean desde aquí.
     """
     data = await request.json()
-    nombres = (data.get("nombres") or "").strip()
-    apellido_paterno = (data.get("apellido_paterno") or "").strip()
-    apellido_materno = (data.get("apellido_materno") or "").strip()
-    matricula = (data.get("matricula") or "").strip()
-    email = (data.get("email") or "").strip().lower()
+    nombres = (data.get("nombres") or "").strip()[:80]
+    apellido_paterno = (data.get("apellido_paterno") or "").strip()[:80]
+    apellido_materno = (data.get("apellido_materno") or "").strip()[:80]
+    matricula = (data.get("matricula") or "").strip()[:30]
+    email = (data.get("email") or "").strip().lower()[:100]
     tag_uid = (data.get("tag_uid") or "").strip() or None
     pin = (data.get("password") or data.get("pin") or "").strip()
 
@@ -1000,7 +1014,7 @@ async def api_create_request(request):
     if data.get("tool_id") and data.get("tool_id") not in tool_ids:
         tool_ids.append(data.get("tool_id"))
     tool_ids = list(dict.fromkeys(tool_ids))  # sin repetidos, conservando el orden
-    motivo = (data.get("motivo") or "").strip() or "Sin motivo indicado"
+    motivo = ((data.get("motivo") or "").strip() or "Sin motivo indicado")[:250]
 
     if not user_id or not tool_ids:
         return JSONResponse({"error": "Elige al menos una herramienta"}, status_code=400)
@@ -1298,6 +1312,18 @@ async def api_auth_me(request):
     user_safe = {k: v for k, v in user.items() if k != "pin_hash"}
     return JSONResponse({"authenticated": True, "user": user_safe})
 
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Inyecta cabeceras de protección HTTP recomendadas (OWASP) en cada respuesta."""
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
 routes = [
     Route("/", serve_index),
     Route("/api/health", api_health, methods=["GET"]),
@@ -1342,14 +1368,16 @@ routes = [
 ]
 
 middleware = [
+    Middleware(SecurityHeadersMiddleware),
     Middleware(GZipMiddleware, minimum_size=500),
     Middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
-        allow_credentials=True
+        allow_credentials=False
     )
 ]
 
-app = Starlette(debug=True, routes=routes, middleware=middleware)
+IS_DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1")
+app = Starlette(debug=IS_DEBUG, routes=routes, middleware=middleware)
