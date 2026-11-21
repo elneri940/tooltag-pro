@@ -284,6 +284,19 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_loan_requests_pending ON loan_requests(estado);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_verification_codes_lookup ON verification_codes(email, code, used);")
 
+        # Asegurar Row Level Security (RLS) en todas las tablas de PostgreSQL (Supabase)
+        # Esto previene accesos indebidos o fugas de datos a través de la API pública PostgREST de Supabase.
+        # El backend de Python (conectado como postgres/owner) mantiene acceso total transparente vía BYPASSRLS.
+        tables = [
+            "users", "tools", "loans", "point_transactions",
+            "system_settings", "loan_requests", "verification_codes"
+        ]
+        for tbl in tables:
+            try:
+                cursor.execute(f"ALTER TABLE {tbl} ENABLE ROW LEVEL SECURITY;")
+            except Exception as e:
+                print(f"[RLS] Advertencia habilitando RLS en {tbl}: {e}")
+
         conn.commit()
         conn.close()
         return
