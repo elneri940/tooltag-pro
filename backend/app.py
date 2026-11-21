@@ -24,6 +24,10 @@ from .gamification import (
     verify_pin, set_user_pin, update_user_profile, hash_pin
 )
 from .seed import ensure_defaults
+from .auth import (
+    create_access_token, verify_access_token, get_current_user_from_request,
+    require_auth, is_rate_limited, record_login_failure, clear_login_failures
+)
 
 # Inicializar base de datos (PostgreSQL en Supabase o SQLite local) y asegurar Admin Maestro
 try:
@@ -304,6 +308,9 @@ async def api_get_user_by_tag(request):
     })
 
 async def api_create_user(request):
+    current_admin, err = require_auth(request, ["admin"])
+    if err:
+        return err
     data = await request.json()
     nombre = data.get("nombre", "").strip()
     email = data.get("email", "").strip().lower()
@@ -337,6 +344,9 @@ async def api_create_user(request):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_update_user(request):
+    current_admin, err = require_auth(request, ["admin"])
+    if err:
+        return err
     user_id = request.path_params["id"]
     data = await request.json()
     nombre = data.get("nombre", "").strip()
@@ -370,6 +380,9 @@ async def api_update_user(request):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_delete_user(request):
+    current_admin, err = require_auth(request, ["admin"])
+    if err:
+        return err
     user_id = request.path_params["id"]
     try:
         execute_db("DELETE FROM users WHERE id = ?", (user_id,))
@@ -429,6 +442,9 @@ async def api_get_tool_by_tag(request):
     return JSONResponse(tool)
 
 async def api_create_tool(request):
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     data = await request.json()
     nombre = data.get("nombre", "").strip()
     codigo = data.get("codigo_inventario", "").strip()
@@ -454,6 +470,9 @@ async def api_create_tool(request):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_update_tool(request):
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     tool_id = request.path_params["id"]
     data = await request.json()
     nombre = data.get("nombre", "").strip()
@@ -480,6 +499,9 @@ async def api_update_tool(request):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_delete_tool(request):
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     tool_id = request.path_params["id"]
     try:
         execute_db("DELETE FROM tools WHERE id = ?", (tool_id,))
@@ -559,6 +581,9 @@ async def api_history(request):
 
 async def api_history_csv(request):
     """Descarga el historial en CSV (se abre directo en Excel)."""
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     import csv, io
     from starlette.responses import Response
     rows = _history_rows(dict(request.query_params))
@@ -577,6 +602,9 @@ async def api_history_csv(request):
 
 async def api_checkout(request):
     """Procesa el check-out de una herramienta mediante ID o Tag."""
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     data = await request.json()
     user_id = data.get("user_id")
     tool_id = data.get("tool_id")
@@ -611,6 +639,9 @@ async def api_checkout(request):
 
 async def api_checkout_multi(request):
     """Pedido de 1 o 2 herramientas a la vez (todo o nada). Acepta ids o tags."""
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     data = await request.json()
     user_id = data.get("user_id")
     user_tag = data.get("user_tag")
@@ -642,6 +673,9 @@ async def api_checkout_multi(request):
 
 async def api_checkin(request):
     """Procesa la devolución y calcula los puntos automáticos de gamificación."""
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     data = await request.json()
     loan_id = data.get("loan_id")
     tool_id = data.get("tool_id")
@@ -690,6 +724,9 @@ async def api_checkin(request):
 
 # --- PUNTOS Y GAMIFICACIÓN ---
 async def api_adjust_points(request):
+    current_admin, err = require_auth(request, ["admin"])
+    if err:
+        return err
     data = await request.json()
     user_id = data.get("user_id")
     delta = int(data.get("delta", 0))
@@ -708,6 +745,11 @@ async def api_adjust_points(request):
 # --- PERFIL DE USUARIO Y PIN ---
 async def api_update_profile(request):
     """Permite a cualquier usuario editar su propio perfil (nombre, email, avatar, tag)."""
+    current_user, err = require_auth(request)
+    if err:
+        return err
+    if current_user.get("rol") != "admin" and int(current_user["id"]) != int(request.path_params["id"]):
+        return JSONResponse({"error": "No puedes modificar el perfil de otro usuario"}, status_code=403)
     user_id = request.path_params["id"]
     data = await request.json()
     try:
@@ -719,6 +761,11 @@ async def api_update_profile(request):
 
 async def api_set_pin(request):
     """Establece o cambia el PIN de seguridad de un usuario."""
+    current_user, err = require_auth(request)
+    if err:
+        return err
+    if current_user.get("rol") != "admin" and int(current_user["id"]) != int(request.path_params["id"]):
+        return JSONResponse({"error": "No puedes cambiar el PIN de otro usuario"}, status_code=403)
     user_id = request.path_params["id"]
     data = await request.json()
     new_pin = data.get("pin", "").strip()
@@ -782,17 +829,26 @@ async def api_verify_pin(request):
 
 async def api_login(request):
     """
-    Permite a un operario o administrador autenticarse con Usuario/Correo y Contraseña/PIN
-    para operar en el Kiosco o en el sistema sin necesidad de tag RFID físico.
+    Permite a un alumno, operario o administrador autenticarse con Usuario/Correo/Matrícula y Contraseña/PIN.
+    Genera un JWT seguro y aplica protección contra fuerza bruta (Rate Limiting).
     """
     data = await request.json()
     identifier = data.get("identifier", "").strip()
     password = data.get("password", "").strip()
 
-    if not identifier:
-        return JSONResponse({"error": "Ingresa tu usuario o correo"}, status_code=400)
+    client_ip = request.client.host if (request.client and request.client.host) else "local"
+    rate_key = f"{client_ip}:{identifier.lower()}"
 
-    # Buscar usuario por email, nombre o tag
+    if is_rate_limited(rate_key, max_attempts=5, window_seconds=60):
+        return JSONResponse({
+            "error": "Demasiados intentos fallidos. Por seguridad, espera 1 minuto antes de reintentar.",
+            "code": "TOO_MANY_REQUESTS"
+        }, status_code=429)
+
+    if not identifier:
+        return JSONResponse({"error": "Ingresa tu usuario, matrícula o correo"}, status_code=400)
+
+    # Buscar usuario por email, nombre, tag o matrícula
     user = query_db("""
         SELECT * FROM users 
         WHERE LOWER(email) = LOWER(?) 
@@ -805,14 +861,22 @@ async def api_login(request):
         user = query_db("SELECT * FROM users WHERE LOWER(nombre) LIKE LOWER(?)", (f"%{identifier}%",), one=True)
 
     if not user:
+        record_login_failure(rate_key)
         return JSONResponse({"error": "No se encontró ningún usuario con esas credenciales"}, status_code=404)
 
-    # Verificar contraseña / PIN si está configurado
-    if user["pin_hash"]:
+    # Verificar contraseña / PIN de manera estricta
+    if user.get("rol") in ["admin", "operator"] or user.get("pin_hash"):
         if not password:
+            record_login_failure(rate_key)
             return JSONResponse({"error": "Contraseña o PIN requerido para esta cuenta"}, status_code=401)
         if not verify_pin(user["id"], password):
+            record_login_failure(rate_key)
             return JSONResponse({"error": "Contraseña o PIN incorrecto"}, status_code=401)
+
+    clear_login_failures(rate_key)
+
+    # Generar JWT firmado
+    token = create_access_token(user["id"], user["rol"], user["email"])
 
     # Préstamos activos
     loans = query_db("""
@@ -831,6 +895,7 @@ async def api_login(request):
 
     return JSONResponse({
         "success": True,
+        "token": token,
         "user": user_safe,
         "active_loans": loans,
         "bloqueado_por_puntos": bloqueado,
@@ -857,8 +922,8 @@ async def api_register(request):
         return JSONResponse({"error": "Nombre, apellido paterno, matrícula y correo son obligatorios"}, status_code=400)
     if "@" not in email:
         return JSONResponse({"error": "El correo no es válido"}, status_code=400)
-    if pin and len(pin) < 4:
-        return JSONResponse({"error": "El PIN debe tener al menos 4 dígitos"}, status_code=400)
+    if not pin or len(pin) < 4:
+        return JSONResponse({"error": "Por seguridad, debes definir una contraseña o PIN de al menos 4 caracteres"}, status_code=400)
 
     if query_db("SELECT id FROM users WHERE LOWER(matricula) = LOWER(?)", (matricula,), one=True):
         return JSONResponse({"error": f"La matrícula {matricula} ya está registrada"}, status_code=409)
@@ -884,8 +949,10 @@ async def api_register(request):
         """, (user_id, initial_puntos, initial_puntos))
 
         await broadcast_event("user_created", {"id": user_id, "nombre": nombre_completo, "rol": "user"})
+        token = create_access_token(user_id, 'user', email)
         return JSONResponse({
             "success": True,
+            "token": token,
             "user": {"id": user_id, "nombre": nombre_completo, "matricula": matricula, "email": email,
                      "rol": "user", "tag_uid": tag_uid, "puntos": initial_puntos, "estado": "activo"},
             "message": "Alumno registrado correctamente."
@@ -924,6 +991,9 @@ async def api_create_request(request):
     Solicitud de préstamo de una o varias herramientas en un solo envío.
     El motivo es opcional. El plazo lo fija el sistema (días generales o los de la persona).
     """
+    current_user, err = require_auth(request)
+    if err:
+        return err
     data = await request.json()
     user_id = data.get("user_id")
     tool_ids = list(data.get("tool_ids") or [])
@@ -934,6 +1004,9 @@ async def api_create_request(request):
 
     if not user_id or not tool_ids:
         return JSONResponse({"error": "Elige al menos una herramienta"}, status_code=400)
+
+    if current_user.get("rol") not in ["admin", "operator"] and int(current_user["id"]) != int(user_id):
+        return JSONResponse({"error": "No puedes solicitar herramientas a nombre de otro alumno"}, status_code=403)
 
     settings = get_settings()
     min_threshold = int(settings.get("min_points_threshold", 20))
@@ -990,6 +1063,9 @@ def _approved_not_delivered(req):
 
 async def api_approve_request(request):
     """Autoriza el pedido. El plazo NO empieza aquí: empieza cuando se entrega el material."""
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     req_id = request.path_params["id"]
     req = query_db("SELECT * FROM loan_requests WHERE id = ?", (req_id,), one=True)
     if not req:
@@ -1013,6 +1089,9 @@ async def api_approve_request(request):
 
 async def api_deliver_request(request):
     """Entrega física del material: aquí queda registrado el préstamo y empieza a contar el plazo."""
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     req_id = request.path_params["id"]
     req = query_db("SELECT * FROM loan_requests WHERE id = ?", (req_id,), one=True)
     if not req:
@@ -1031,6 +1110,9 @@ async def api_deliver_request(request):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_reject_request(request):
+    current_admin, err = require_auth(request, ["admin", "operator"])
+    if err:
+        return err
     req_id = request.path_params["id"]
     data = await request.json()
     motivo_rechazo = data.get("motivo", "").strip() or "Rechazada por el Administrador"
@@ -1079,6 +1161,9 @@ async def api_get_settings(request):
     return JSONResponse(get_settings())
 
 async def api_update_settings(request):
+    current_admin, err = require_auth(request, ["admin"])
+    if err:
+        return err
     data = await request.json()
     for k, v in data.items():
         update_setting(k, v)
@@ -1116,9 +1201,11 @@ async def api_rfid_scan(request):
         # No enviar pin_hash al frontend
         user_safe = {k: v for k, v in user.items() if k != "pin_hash"}
 
+        token = create_access_token(user["id"], user["rol"], user["email"])
         return JSONResponse({
             "target": "user",
             "tag_uid": tag_uid,
+            "token": token,
             "data": user_safe,
             "active_loans": loans,
             "bloqueado": bloqueado,
@@ -1202,6 +1289,15 @@ async def serve_index(request):
 # DEFINICIÓN DE APLICACIÓN STARLETTE
 # ==========================================
 
+
+async def api_auth_me(request):
+    """Valida la sesión actual del usuario basada en el JWT Bearer."""
+    user = get_current_user_from_request(request)
+    if not user:
+        return JSONResponse({"authenticated": False, "user": None}, status_code=401)
+    user_safe = {k: v for k, v in user.items() if k != "pin_hash"}
+    return JSONResponse({"authenticated": True, "user": user_safe})
+
 routes = [
     Route("/", serve_index),
     Route("/api/health", api_health, methods=["GET"]),
@@ -1228,6 +1324,7 @@ routes = [
     Route("/api/users/{id:int}/profile", api_update_profile, methods=["PUT"]),
     Route("/api/users/{id:int}/pin", api_set_pin, methods=["PUT"]),
     Route("/api/verify-pin", api_verify_pin, methods=["POST"]),
+    Route("/api/auth/me", api_auth_me, methods=["GET"]),
     Route("/api/auth/login", api_login, methods=["POST"]),
     Route("/api/auth/register", api_register, methods=["POST"]),
     Route("/api/requests", api_get_requests, methods=["GET"]),

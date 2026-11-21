@@ -3,6 +3,28 @@
 
 const { useState, useEffect, useRef, useMemo } = React;
 
+// Interceptor global para adjuntar token JWT a todas las peticiones a la API
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = async function(input, init = {}) {
+        try {
+            const token = localStorage.getItem('tooltag_token');
+            const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+            if (token && typeof url === 'string' && url.startsWith('/api/')) {
+                init = init || {};
+                const headers = new Headers(init.headers || {});
+                if (!headers.has('Authorization')) {
+                    headers.set('Authorization', 'Bearer ' + token);
+                }
+                init.headers = headers;
+            }
+        } catch (e) {
+            console.warn("Fetch interceptor warning:", e);
+        }
+        return originalFetch.call(this, input, init);
+    };
+})();
+
 // ==========================================
 // COMPONENTES DE ICONOS SVG (LUCIDE EQUIVALENT)
 // ==========================================
@@ -141,10 +163,16 @@ const IconClipboard = ({ className = "w-5 h-5" }) => (
 // APLICACIÓN PRINCIPAL
 // ==========================================
 function App() {
-    // Usuario activo en sesión: persistente en localStorage para que no se cierre al refrescar
+    // Usuario activo en sesión: persistente en localStorage con token JWT
     const [currentUser, setCurrentUser] = useState(() => {
         try {
+            const token = localStorage.getItem('tooltag_token');
             const saved = localStorage.getItem('tooltag_user');
+            // Si hay usuario pero no hay token (sesión antigua anterior al JWT), forzar inicio de sesión limpio
+            if (saved && !token) {
+                localStorage.removeItem('tooltag_user');
+                return null;
+            }
             return saved ? JSON.parse(saved) : null;
         } catch (e) {
             return null;
@@ -432,6 +460,9 @@ function App() {
 
             if (data.target === 'user') {
                 const user = data.data;
+                if (data.token) {
+                    localStorage.setItem('tooltag_token', data.token);
+                }
                 // Si no hay sesión, iniciar sesión con este usuario
                 if (!currentUser) {
                     setCurrentUser(user);
@@ -741,12 +772,13 @@ function App() {
     const handleLogout = () => {
         try {
             localStorage.removeItem('tooltag_user');
+            localStorage.removeItem('tooltag_token');
             localStorage.removeItem('tooltag_admin_tab');
             localStorage.removeItem('tooltag_user_tab');
         } catch (e) {}
         setCurrentUser(null);
         setKioskUser(null);
-        showToast("Sesión cerrada", "info");
+        showToast("Sesión cerrada correctamente", "info");
     };
 
     return (
@@ -1034,8 +1066,9 @@ function App() {
                 <LoginAuthModal
                     targetRole={authModal === 'admin_login' ? 'admin' : 'user'}
                     onClose={() => setAuthModal(null)}
-                    onSuccess={(user) => {
+                    onSuccess={(user, token) => {
                         window.rfidAudio.playSuccess();
+                        if (token) localStorage.setItem('tooltag_token', token);
                         setCurrentUser(user);
                         setAuthModal(null);
                         showToast(`Bienvenido ${user.nombre}`, "success");
@@ -1048,8 +1081,9 @@ function App() {
             {authModal === 'user_register' && (
                 <UserRegisterModal
                     onClose={() => setAuthModal(null)}
-                    onSuccess={(user) => {
+                    onSuccess={(user, token) => {
                         window.rfidAudio.playSuccess();
+                        if (token) localStorage.setItem('tooltag_token', token);
                         setCurrentUser(user);
                         setAuthModal(null);
                         showToast(`Registro completo. ¡Bienvenido ${user.nombre}!`, "success");
@@ -2700,7 +2734,7 @@ function HistoryView() {
                     <p className="text-xs text-slate-500">Todos los préstamos: quién, qué herramienta, cuándo salió y cuándo regresó.</p>
                 </div>
                 <a
-                    href={'/api/history.csv?' + qs()}
+                    href={'/api/history.csv?' + qs() + '&token=' + encodeURIComponent(localStorage.getItem('tooltag_token') || '')}
                     download
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md text-center"
                 >
@@ -2884,7 +2918,7 @@ function LoginAuthModal({ targetRole, onClose, onSuccess, onSwitchToRegister }) 
                     setError("Esta cuenta no tiene privilegios de Administrador.");
                     return;
                 }
-                onSuccess(data.user);
+                onSuccess(data.user, data.token);
             } else {
                 setError(data.error || "Credenciales incorrectas");
             }
@@ -3017,7 +3051,7 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
             });
             const data = await res.json();
             if (res.ok && data.success) {
-                onSuccess(data.user);
+                onSuccess(data.user, data.token);
             } else {
                 setError(data.error || "No se pudo completar el registro");
             }
@@ -3092,8 +3126,19 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     </div>
 
                     <div>
-                        <label className="block text-slate-700 font-semibold mb-1">PIN (opcional, mínimo 4 dígitos)</label>
-                        <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} className={inputCls + " font-mono"} placeholder="••••" />
+                        <label className="block text-slate-700 font-semibold mb-1">Contraseña o PIN (obligatorio, mínimo 4 caracteres) *</label>
+                        <input
+                            type="password"
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value)}
+                            className={inputCls + " font-mono"}
+                            placeholder="Crea tu contraseña o PIN secreto"
+                            required
+                            minLength={4}
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">
+                            Protege tu cuenta para que nadie más pueda solicitar material a tu nombre.
+                        </p>
                     </div>
 
                     {error && (
