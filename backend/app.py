@@ -88,8 +88,12 @@ def get_all_sync_data():
         SELECT l.*,
                u.nombre as user_nombre,
                u.email as user_email,
+               u.matricula as matricula,
+               u.puntos as user_puntos,
                t.nombre as tool_nombre,
-               t.codigo_inventario as tool_codigo
+               t.codigo_inventario as tool_codigo,
+               t.codigo_inventario as codigo_inventario,
+               CASE WHEN l.estado = 'activo' AND l.fecha_limite < datetime('now', 'localtime') THEN 1 ELSE 0 END as vencido
         FROM loans l
         JOIN users u ON l.user_id = u.id
         JOIN tools t ON l.tool_id = t.id
@@ -490,8 +494,8 @@ async def api_get_loans(request):
     user_id = request.query_params.get("user_id")
 
     query = """
-        SELECT l.*, 
-               u.nombre as user_nombre, u.email as user_email, u.tag_uid as user_tag, u.puntos as user_puntos,
+        SELECT l.*,
+               u.nombre as user_nombre, u.email as user_email, u.matricula as matricula, u.tag_uid as user_tag, u.puntos as user_puntos,
                t.nombre as tool_nombre, t.codigo_inventario, t.categoria, t.tag_uid as tool_tag, t.imagen_url,
                CASE WHEN l.estado = 'activo' AND l.fecha_limite < datetime('now', 'localtime') THEN 1 ELSE 0 END as vencido
         FROM loans l
@@ -846,11 +850,11 @@ async def api_register(request):
     apellido_materno = (data.get("apellido_materno") or "").strip()
     matricula = (data.get("matricula") or "").strip()
     email = (data.get("email") or "").strip().lower()
-    tag_uid = (data.get("tag_uid") or "").strip()
+    tag_uid = (data.get("tag_uid") or "").strip() or None
     pin = (data.get("password") or data.get("pin") or "").strip()
 
-    if not nombres or not apellido_paterno or not matricula or not email or not tag_uid:
-        return JSONResponse({"error": "Nombre, apellido paterno, matrícula, correo y tag son obligatorios"}, status_code=400)
+    if not nombres or not apellido_paterno or not matricula or not email:
+        return JSONResponse({"error": "Nombre, apellido paterno, matrícula y correo son obligatorios"}, status_code=400)
     if "@" not in email:
         return JSONResponse({"error": "El correo no es válido"}, status_code=400)
     if pin and len(pin) < 4:
@@ -860,9 +864,10 @@ async def api_register(request):
         return JSONResponse({"error": f"La matrícula {matricula} ya está registrada"}, status_code=409)
     if query_db("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,), one=True):
         return JSONResponse({"error": f"El correo {email} ya está registrado"}, status_code=409)
-    if query_db("SELECT id FROM users WHERE UPPER(tag_uid) = UPPER(?)", (tag_uid,), one=True) or \
-       query_db("SELECT id FROM tools WHERE UPPER(tag_uid) = UPPER(?)", (tag_uid,), one=True):
-        return JSONResponse({"error": "Ese tag ya está asignado a otra persona o herramienta"}, status_code=409)
+    if tag_uid:
+        if query_db("SELECT id FROM users WHERE UPPER(tag_uid) = UPPER(?)", (tag_uid,), one=True) or \
+           query_db("SELECT id FROM tools WHERE UPPER(tag_uid) = UPPER(?)", (tag_uid,), one=True):
+            return JSONResponse({"error": "Ese tag ya está asignado a otra persona o herramienta"}, status_code=409)
 
     nombre_completo = f"{nombres} {apellido_paterno} {apellido_materno}".strip()
     initial_puntos = int(get_settings().get("initial_points", 100))

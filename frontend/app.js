@@ -1986,6 +1986,7 @@ function AdminDashboard({
     onCheckout, onScanSimulated, selectedToolToCheckout, setSelectedToolToCheckout
 }) {
     const [localSettings, setLocalSettings] = useState(settings);
+    const [loanSearch, setLoanSearch] = useState("");
     useEffect(() => setLocalSettings(settings), [settings]);
 
     const pendingRequests = loanRequests.filter(r => r.estado === 'pendiente');
@@ -1999,25 +2000,40 @@ function AdminDashboard({
     );
     const resolvedRequests = loanRequests.filter(r => r.estado !== 'pendiente');
     const activeLoans = loans.filter(l => l.estado === 'activo');
+    const filteredActiveLoans = activeLoans.filter(l => {
+        if (!loanSearch.trim()) return true;
+        const q = loanSearch.toLowerCase();
+        return (l.user_nombre && l.user_nombre.toLowerCase().includes(q)) ||
+               (l.matricula && String(l.matricula).toLowerCase().includes(q)) ||
+               (l.user_email && l.user_email.toLowerCase().includes(q)) ||
+               (l.tool_nombre && l.tool_nombre.toLowerCase().includes(q)) ||
+               (l.codigo_inventario && String(l.codigo_inventario).toLowerCase().includes(q));
+    });
 
     return (
         <div className="space-y-6">
             {/* KPI METRICS CARDS */}
             {stats && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Solicitudes Pendientes</div>
+                    <div onClick={() => setAdminTab('requests')} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm cursor-pointer hover:border-blue-400 hover:shadow transition-all">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                            <span>Solicitudes</span>
+                            <span className="text-[10px] text-amber-600 font-semibold">Ver &rarr;</span>
+                        </div>
                         <div className="text-2xl font-bold text-amber-700 mt-1">{stats.requests?.pendientes || 0}</div>
-                        <div className="text-[11px] text-slate-500 mt-1">esperando tu aprobación</div>
+                        <div className="text-[11px] text-slate-500 mt-1">pendientes de aprobar</div>
                     </div>
 
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Préstamos Activos</div>
+                    <div onClick={() => setAdminTab('loans')} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm cursor-pointer hover:border-blue-400 hover:shadow transition-all">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                            <span>Préstamos Activos</span>
+                            <span className="text-[10px] text-blue-600 font-semibold">Devolver &rarr;</span>
+                        </div>
                         <div className="text-2xl font-bold text-blue-700 mt-1">{activeLoans.length}</div>
-                        <div className="text-[11px] text-slate-500 mt-1">en poder de operarios</div>
+                        <div className="text-[11px] text-blue-600 font-medium mt-1">clic para registrar devolución</div>
                     </div>
 
-                    <div className={`bg-white border rounded-lg p-4 shadow-sm ${stats.loans?.vencidos > 0 ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`}>
+                    <div onClick={() => setAdminTab('loans')} className={`bg-white border rounded-lg p-4 shadow-sm cursor-pointer hover:shadow transition-all ${stats.loans?.vencidos > 0 ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`}>
                         <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
                             <span>Préstamos Vencidos</span>
                             {stats.loans?.vencidos > 0 && <span className="w-2 h-2 rounded-full bg-rose-600"></span>}
@@ -2028,8 +2044,11 @@ function AdminDashboard({
                         <div className="text-[11px] text-rose-700 mt-1">con penalización activa</div>
                     </div>
 
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Herramientas Total</div>
+                    <div onClick={() => setAdminTab('inventory')} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm cursor-pointer hover:border-blue-400 hover:shadow transition-all">
+                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                            <span>Herramientas Total</span>
+                            <span className="text-[10px] text-slate-400">Catálogo &rarr;</span>
+                        </div>
                         <div className="text-2xl font-bold text-slate-900 mt-1">{tools.length}</div>
                         <div className="text-[11px] text-emerald-700 mt-1">{tools.filter(t => t.estado === 'disponible').length} disponibles</div>
                     </div>
@@ -2155,6 +2174,81 @@ function AdminDashboard({
                         </div>
                     )}
 
+                    {/* SECCIÓN DIRECTA: MATERIAL EN PODER DE ALUMNOS (REGISTRAR DEVOLUCIÓN DIRECTA) */}
+                    {activeLoans.length > 0 && (
+                        <div className="pt-6 border-t border-slate-200 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                        <IconClock className="w-4 h-4 text-blue-700" />
+                                        <span>Material en Préstamo &bull; Registrar Devolución ({activeLoans.length})</span>
+                                    </h4>
+                                    <p className="text-xs text-slate-500">¿El alumno trajo de vuelta su herramienta a ventanilla? Haz clic en Registrar Devolución para recibirla.</p>
+                                </div>
+                                <button
+                                    onClick={() => setAdminTab('loans')}
+                                    className="text-xs font-semibold text-blue-700 hover:underline flex items-center gap-1"
+                                >
+                                    <span>Ver pestaña completa</span>
+                                    <span>&rarr;</span>
+                                </button>
+                            </div>
+
+                            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
+                                        <tr>
+                                            <th className="py-2.5 px-3">Alumno</th>
+                                            <th className="py-2.5 px-3">Herramienta</th>
+                                            <th className="py-2.5 px-3">Fecha Límite</th>
+                                            <th className="py-2.5 px-3">Estado</th>
+                                            <th className="py-2.5 px-3 text-right">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                        {filteredActiveLoans.map(l => (
+                                            <tr key={l.id} className="hover:bg-slate-50">
+                                                <td className="py-2.5 px-3">
+                                                    <div className="font-semibold text-slate-900">{l.user_nombre}</div>
+                                                    <div className="text-[10px] text-slate-500">{l.matricula ? `Matrícula: ${l.matricula}` : l.user_email}</div>
+                                                </td>
+                                                <td className="py-2.5 px-3">
+                                                    <div className="font-semibold text-slate-800">{l.tool_nombre}</div>
+                                                    <div className="text-[10px] font-mono text-slate-500">{l.codigo_inventario}</div>
+                                                </td>
+                                                <td className="py-2.5 px-3 font-mono text-slate-700">
+                                                    <span className={l.vencido === 1 ? 'text-rose-700 font-bold' : ''}>
+                                                        {l.fecha_limite}
+                                                    </span>
+                                                </td>
+                                                <td className="py-2.5 px-3">
+                                                    {l.vencido === 1 ? (
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                                            ¡Vencido!
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            A tiempo
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 px-3 text-right">
+                                                    <button
+                                                        onClick={() => onCheckin(l.id)}
+                                                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 ml-auto"
+                                                    >
+                                                        <IconCheckCircle className="w-3.5 h-3.5" />
+                                                        <span>Registrar Devolución</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Historial reciente de solicitudes resueltas */}
                     {resolvedRequests.length > 0 && (
                         <div className="pt-6 border-t border-slate-200 space-y-3">
@@ -2198,12 +2292,21 @@ function AdminDashboard({
             {/* SECCIÓN 2: HERRAMIENTAS PRESTADAS & DEVOLUCIONES */}
             {adminTab === 'loans' && (
                 <div className="space-y-6">
-                    <div>
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <IconClock className="w-5 h-5 text-blue-700" />
-                            <span>Herramientas Prestadas y Fecha de Regreso ({activeLoans.length})</span>
-                        </h3>
-                        <p className="text-xs text-slate-500">Supervisa qué usuario tiene cada equipo y cuándo debe regresarlo.</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <IconClock className="w-5 h-5 text-blue-700" />
+                                <span>Herramientas Prestadas ({activeLoans.length})</span>
+                            </h3>
+                            <p className="text-xs text-slate-500">Supervisa qué alumno tiene cada equipo y registra su devolución.</p>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Buscar por alumno, matrícula o herramienta..."
+                            value={loanSearch}
+                            onChange={(e) => setLoanSearch(e.target.value)}
+                            className="w-full sm:w-80 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        />
                     </div>
 
                     {activeLoans.length === 0 ? (
@@ -2908,7 +3011,7 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     apellido_materno: apellidoMaterno,
                     matricula: matricula.trim(),
                     email: email.trim().toLowerCase(),
-                    tag_uid: tagUid.trim(),
+                    tag_uid: tagUid.trim() ? tagUid.trim() : null,
                     password: pin.trim()
                 })
             });
@@ -2970,19 +3073,21 @@ function UserRegisterModal({ onClose, onSuccess, onSwitchToLogin }) {
                     </div>
 
                     <div className="p-3 rounded-lg bg-slate-50/80 border border-slate-200 space-y-1.5">
-                        <label className="block text-slate-700 font-semibold">Tag RFID / NFC *</label>
+                        <div className="flex items-center justify-between">
+                            <label className="block text-slate-700 font-semibold">Tag RFID / NFC (Opcional)</label>
+                            <span className="text-[10px] text-slate-400">Puedes dejarlo vacío</span>
+                        </div>
                         <input
                             type="text"
                             data-noscan="1"
                             value={tagUid}
                             onChange={(e) => setTagUid(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
-                            placeholder="Haz clic aquí y acerca tu tag al lector"
-                            className="w-full bg-white border border-blue-300 rounded-xl px-3 py-2 text-slate-900 font-mono tracking-wider text-center"
-                            required
+                            placeholder="Opcional: escribe tu tag o déjalo vacío"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono tracking-wider text-center"
                         />
                         <p className="text-[10px] text-slate-500">
-                            El lector escribe el número del tag aquí solo. Si no tienes lector, escribe el número que viene en el tag.
+                            No es obligatorio para pedir material. Puedes solicitar herramientas usando únicamente tu matrícula y correo.
                         </p>
                     </div>
 
@@ -3592,13 +3697,13 @@ function ToolFormModal({ tool, onClose, onSave }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-slate-500 mb-1">Tag RFID UID</label>
+                        <label className="block text-slate-500 mb-1">Tag RFID UID (Opcional)</label>
                         <input
                             type="text"
                             value={formData.tag_uid}
                             onChange={e => setFormData({ ...formData, tag_uid: e.target.value })}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
-                            placeholder="TAG-TL-001"
+                            placeholder="Opcional: TAG-TL-001"
                         />
                     </div>
                     <div>
@@ -3743,12 +3848,13 @@ function UserFormModal({ user, onClose, onSave }) {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-slate-500 mb-1">UID del Tag RFID Personal</label>
+                        <label className="block text-slate-500 mb-1">UID del Tag RFID Personal (Opcional)</label>
                         <input
                             type="text"
                             value={formData.tag_uid}
                             onChange={e => setFormData({ ...formData, tag_uid: e.target.value })}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                            placeholder="Opcional: ej. AL-0001"
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
